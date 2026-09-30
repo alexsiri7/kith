@@ -1,8 +1,8 @@
 ---
 created: '2026-09-30'
-github_issue: null
+github_issue: 1
 id: '001'
-status: draft
+status: idea
 title: 'Data-driven world engine: entities, affordances and a generic Kith brain'
 updated: '2026-09-30'
 ---
@@ -31,4 +31,19 @@ The game's behaviour is the same as the prototype's, and the balance scenarios k
 
 ## Issues
 
-_None yet._
+- #1 — [Alex] Commit the prototype reference implementation to prototype/
+- #2 — Scaffold the TypeScript monorepo, test runner and CI
+- #3 — Port the prototype simulation to TypeScript as packages/legacy-sim
+- #4 — Balance scenarios as automated assertions
+- #5 — Deterministic core: seeded RNG, simulation clock, step/command/event contract
+- #6 — World model: entity types, entities, typed references, zones and save format
+- #7 — Affordances and outcomes: one declarative interaction system
+- #8 — Kith brain: needs, attention, decision, learning and opinions
+- #9 — Language: meanings, lexicon, teaching channels and gated speech
+- #10 — World systems: weather, day/night, catch-up and ecology
+- #11 — Social life: relationships, warnings, families and grief
+- #12 — Tock: a safety-net agent with a task planner and your wallet
+- #13 — Economy and shop driven by entity definitions
+- #14 — Content pack: food, toys, shelters and gadgets as definitions
+- #15 — Content pack: nature, critters, hazards and the sky as definitions
+- #16 — Engine parity: balance scenarios pass on the new engine, prototype saves import
