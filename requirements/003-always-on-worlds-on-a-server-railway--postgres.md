@@ -1,8 +1,8 @@
 ---
 created: '2026-09-30'
-github_issue: null
+github_issue: 21
 id: '003'
-status: draft
+status: idea
 title: Always-on worlds on a server (Railway + Postgres)
 updated: '2026-09-30'
 ---
@@ -23,4 +23,7 @@ Today a Kith world lives in one browser: it only advances when that tab is opene
 
 ## Issues
 
-_None yet._
+- #21 — Server skeleton on Railway: Fastify, config, health, Docker
+- #22 — Postgres persistence: schema, migrations and a world store
+- #23 — Authoritative world service: commands API, scheduled ticking and realtime sync
+- #24 — Deployment pipeline, backups and observability
