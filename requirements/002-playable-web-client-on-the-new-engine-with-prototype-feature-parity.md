@@ -1,8 +1,8 @@
 ---
 created: '2026-09-30'
-github_issue: null
+github_issue: 17
 id: '002'
-status: draft
+status: idea
 title: Playable web client on the new engine, with prototype feature parity
 updated: '2026-09-30'
 ---
@@ -26,4 +26,7 @@ A player can open Kith in a browser on a phone or desktop and play everything th
 
 ## Issues
 
-_None yet._
+- #17 — Client renderer: world, camera, minimap and sprites from entity definitions
+- #18 — Client input and commands: tapping, pointing, naming, dragging, kicking
+- #19 — Client panels, roster, why-line, notifications and overlays
+- #20 — Offline mode: local persistence, catch-up on open, Playwright end-to-end tests
