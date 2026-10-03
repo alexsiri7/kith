@@ -1,0 +1,15 @@
+{
+  "name": "@kith/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@kith/cortex": "workspace:*",
+    "fastify": "^5.12.5"
+  }
+}
