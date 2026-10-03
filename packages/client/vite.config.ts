@@ -1,7 +1,8 @@
 import { defaultClientConditions, defineConfig } from 'vite';
+import { sourceCondition } from '../../source-condition.js';
 
 export default defineConfig({
   resolve: {
-    conditions: ['@kith/source', ...defaultClientConditions],
+    conditions: [sourceCondition, ...defaultClientConditions],
   },
 });
