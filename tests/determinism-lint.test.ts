@@ -10,6 +10,12 @@ async function ruleViolations(code: string, filePath: string) {
 }
 
 describe('determinism lint rule', () => {
+  it('covers exactly the engine and content packages', () => {
+    expect(new Set(deterministicPackages)).toEqual(
+      new Set(['packages/engine/**', 'packages/content/**']),
+    );
+  });
+
   const forbidden = {
     'Math.random': 'export const x = Math.random();',
     'Date.now': 'export const x = Date.now();',
