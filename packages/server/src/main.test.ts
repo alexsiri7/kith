@@ -16,4 +16,14 @@ describe('server entrypoint', () => {
 
     expect(listen).toHaveBeenCalledWith({ port: 4321, host: '0.0.0.0' });
   });
+
+  it('falls back to port 3000 when PORT is unset', async () => {
+    const listen = vi.fn();
+    vi.doMock('./index.js', () => ({ buildServer: () => ({ listen }) }));
+    vi.stubEnv('PORT', undefined);
+
+    await import('./main.js');
+
+    expect(listen).toHaveBeenCalledWith({ port: 3000, host: '0.0.0.0' });
+  });
 });
