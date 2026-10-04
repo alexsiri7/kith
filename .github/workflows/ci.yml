@@ -20,3 +20,26 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -t kith-server .
+      - name: Serve /healthz and the client from the image
+        run: |
+          docker run -d --name kith-server -p 3000:3000 \
+            -e DATABASE_URL=postgres://kith:kith@127.0.0.1:5432/kith \
+            -e ANTHROPIC_API_KEY=ci-placeholder \
+            -e APP_ORIGIN=http://localhost:3000 \
+            -e SESSION_SECRET=ci-placeholder-session-secret-0123456789 \
+            kith-server
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/healthz; then
+              curl -fsS http://localhost:3000/ | grep -q 'id="world"' && exit 0
+              break
+            fi
+            sleep 1
+          done
+          docker logs kith-server
+          exit 1
