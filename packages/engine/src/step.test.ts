@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Command } from './command.js';
 import type { GameEvent } from './event.js';
-import { nextFloat, seedStream, type RngState } from './rng.js';
+import { nextFloat, nextUint32, seedStream, type RngState } from './rng.js';
 import { CATCH_UP_STEP_MS, catchUp, step, type StepContext } from './step.js';
 import { createWorld, serialiseWorld, type World } from './world.js';
 
@@ -92,6 +92,15 @@ describe('step', () => {
     expect(serialiseWorld(world)).toBe(before);
     expect(result.world.clock.simTime).toBe(1000);
     expect(result.world.selectedKith).toBe('k');
+  });
+
+  it('carries the rng state forward unchanged', () => {
+    const world = createWorld(5);
+    const weather = nextUint32(world.rng.weather).state;
+    const advanced = { ...world, rng: { ...world.rng, weather } };
+    const { world: next } = step(advanced, 1000, [], live);
+    expect(next.rng).toEqual(advanced.rng);
+    expect(next.rng).not.toEqual(createWorld(5).rng);
   });
 
   it('applies commands in order', () => {
