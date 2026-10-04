@@ -9,7 +9,14 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@fastify/static": "^10.1.5",
+    "@kith/content": "workspace:*",
     "@kith/cortex": "workspace:*",
-    "fastify": "^5.12.5"
+    "@kith/engine": "workspace:*",
+    "fastify": "^5.12.5",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
   }
 }
