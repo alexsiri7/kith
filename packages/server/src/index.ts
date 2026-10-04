@@ -34,7 +34,12 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   });
 
   if (options.clientDir !== undefined) {
-    app.register(fastifyStatic, { root: options.clientDir });
+    app.register(fastifyStatic, {
+      root: options.clientDir,
+      cacheControl: false,
+      lastModified: false,
+      etag: false,
+    });
   }
   return app;
 }

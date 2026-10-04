@@ -88,6 +88,9 @@ describe('server', () => {
     expect(page.statusCode).toBe(200);
     expect(page.headers['content-type']).toMatch(/^text\/html/);
     expect(page.body).toContain('kith-client');
+    expect(page.headers).not.toHaveProperty('cache-control');
+    expect(page.headers).not.toHaveProperty('last-modified');
+    expect(page.headers).not.toHaveProperty('etag');
 
     const health = await server.inject({ method: 'GET', url: '/healthz' });
     expect(health.json()).toEqual({ status: 'ok' });
