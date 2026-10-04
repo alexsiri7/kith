@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import clientViteConfig from '../packages/client/vite.config.js';
 import { sourceCondition } from '../source-condition.js';
+import vitestConfig from '../vitest.config.js';
 
 function readJson(path: string): unknown {
   return JSON.parse(
@@ -38,4 +40,12 @@ describe('source export condition', () => {
       expect(manifest.exports?.['.']?.[sourceCondition]).toBe('./src/index.ts');
     });
   }
+
+  it('is resolved first by the client Vite build', () => {
+    expect(clientViteConfig.resolve?.conditions?.[0]).toBe(sourceCondition);
+  });
+
+  it('is resolved first by Vitest', () => {
+    expect(vitestConfig.ssr?.resolve?.conditions?.[0]).toBe(sourceCondition);
+  });
 });
