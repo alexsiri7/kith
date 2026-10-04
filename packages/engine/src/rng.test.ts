@@ -71,6 +71,7 @@ describe('rng', () => {
   it('rejects seeds that are not uint32', () => {
     for (const seed of [-1, 1.5, 2 ** 32, Number.NaN]) {
       expect(() => seedStreams(seed)).toThrow(RangeError);
+      expect(() => seedStream(seed, 'weather')).toThrow(RangeError);
     }
   });
 });

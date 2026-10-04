@@ -20,9 +20,6 @@ export interface Draw {
  * draw to one system never shifts the sequence another system sees.
  */
 export function seedStreams(seed: number): RngStreams {
-  if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
-    throw new RangeError(`seed must be a uint32, got ${seed}`);
-  }
   return {
     weather: seedStream(seed, 'weather'),
     genetics: seedStream(seed, 'genetics'),
@@ -32,6 +29,9 @@ export function seedStreams(seed: number): RngStreams {
 }
 
 export function seedStream(seed: number, name: string): RngState {
+  if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
+    throw new RangeError(`seed must be a uint32, got ${seed}`);
+  }
   let h = Math.imul(seed ^ 0x811c9dc5, 0x01000193);
   for (let i = 0; i < name.length; i++) {
     h = Math.imul(h ^ name.charCodeAt(i), 0x01000193);
