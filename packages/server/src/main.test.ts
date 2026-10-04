@@ -26,4 +26,17 @@ describe('server entrypoint', () => {
 
     expect(listen).toHaveBeenCalledWith({ port: 3000, host: '0.0.0.0' });
   });
+
+  for (const port of ['', 'abc', '-1', '0', '3.5', '65536']) {
+    it(`refuses to listen when PORT is ${JSON.stringify(port)}`, async () => {
+      const listen = vi.fn();
+      vi.doMock('./index.js', () => ({ buildServer: () => ({ listen }) }));
+      vi.stubEnv('PORT', port);
+
+      await expect(import('./main.js')).rejects.toThrow(
+        `PORT must be an integer from 1 to 65535, got "${port}"`,
+      );
+      expect(listen).not.toHaveBeenCalled();
+    });
+  }
 });
