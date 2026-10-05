@@ -25,7 +25,7 @@ function session(realMs: number, seed: number): Frame[] {
   };
   const pool: Command[] = [
     { type: 'tickle' },
-    { type: 'say', text: 'ball', pointing: 'ball-1' },
+    { type: 'say', text: 'ball', pointing: { kind: 'entity', id: 'ball-1' } },
     { type: 'kick', target: 'ball-1', dir: 1, power: 0.5 },
     { type: 'select', kith: 'kith-1' },
     { type: 'select', kith: 'kith-2' },

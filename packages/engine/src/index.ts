@@ -1,6 +1,11 @@
 export * from './clock.js';
 export type * from './command.js';
+export * from './entity.js';
 export type * from './event.js';
+export * from './registry.js';
 export * from './rng.js';
+export * from './save.js';
 export * from './step.js';
+export type * from './target.js';
+export * from './world-index.js';
 export * from './world.js';

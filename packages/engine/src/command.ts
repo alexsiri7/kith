@@ -1,3 +1,4 @@
+import type { Target } from './target.js';
 import type { EntityId } from './world.js';
 
 export type Command =
@@ -6,9 +7,9 @@ export type Command =
   | {
       readonly type: 'say';
       readonly text: string;
-      readonly pointing?: EntityId;
+      readonly pointing?: Target;
     }
-  | { readonly type: 'point'; readonly target: EntityId }
+  | { readonly type: 'point'; readonly target: Target }
   | {
       readonly type: 'kick';
       readonly target: EntityId;
@@ -26,7 +27,7 @@ export type Command =
       readonly type: 'cortexIntent';
       readonly kith: EntityId;
       readonly verb: string;
-      readonly target: EntityId;
+      readonly target: Target;
     }
   | {
       readonly type: 'setWants';
