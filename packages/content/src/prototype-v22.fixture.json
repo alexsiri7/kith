@@ -1,0 +1,2072 @@
+{
+  "v": 1,
+  "scale": 6,
+  "seed": 4242,
+  "simTime": 1790812800000,
+  "offset": 43200000,
+  "coins": 440,
+  "allowanceDay": 20726,
+  "presenceMs": 0,
+  "presenceDay": 20726,
+  "presenceCoins": 0,
+  "playerName": "Alex",
+  "shelter": 1,
+  "patch": [0.3875000000000002, 0.2875000000000001, 0.05],
+  "sitterUntil": 0,
+  "items": [
+    {
+      "id": "muuj1mte3",
+      "type": "ball",
+      "x": 330,
+      "born": 1790769600000,
+      "h": 0,
+      "vh": 0,
+      "vx": 0
+    },
+    {
+      "id": "muuj1mte4",
+      "type": "shroomR",
+      "x": 1403.8367763998444,
+      "born": 1790769660000
+    },
+    {
+      "id": "muuj1mtt5",
+      "type": "shroomR",
+      "x": 1436.5655778166138,
+      "born": 1790776920000
+    },
+    {
+      "id": "muuj1mu06",
+      "type": "shroomB",
+      "x": 1425.5944930248554,
+      "born": 1790784180000
+    },
+    {
+      "id": "muuj1mu67",
+      "type": "shroomR",
+      "x": 2157.068234668694,
+      "born": 1790791440000
+    }
+  ],
+  "kith": [
+    {
+      "id": "muuj1mtd1",
+      "name": "Pip",
+      "genome": {
+        "hue": 221,
+        "size": 1.0047485363181174,
+        "curiosity": 0.39792030879985363,
+        "agreeable": 0.3841320888700779,
+        "sociability": 0.025439382085665763,
+        "hardiness": 0.08606069668423921,
+        "learnRate": 0.916213007140549,
+        "lifespan": 14.330425328365022,
+        "syll": ["te", "wu", "mi"]
+      },
+      "stage": "baby",
+      "hatchAt": 1790769600000,
+      "born": 1790769660000,
+      "dies": 1792007808748.3708,
+      "alive": true,
+      "parents": [],
+      "gen": 1,
+      "objVal": {
+        "hive": -0.6283786992859451,
+        "cactus": 0,
+        "squirrel": 0.11600000000000002,
+        "butterfly": 0.14200000000000004,
+        "red": 0,
+        "brown": 0
+      },
+      "kin": {
+        "muuj1mte2": {
+          "familiarity": 1,
+          "affection": 0.6636656299339222,
+          "trust": 0.2
+        }
+      },
+      "robotRel": {
+        "familiarity": 0.10500000000000005,
+        "affection": 0.07100000000000012,
+        "trust": 0.16999999999999998
+      },
+      "skill": {
+        "lonely:social": 1,
+        "bored:play": 1,
+        "cold:rest": 1,
+        "tired:sleep": 1,
+        "fear:rest": 1,
+        "hunger:eat": 1
+      },
+      "news": [
+        {
+          "kind": "learned",
+          "text": "Pip learned: friends help when lonely"
+        },
+        {
+          "kind": "learned",
+          "text": "Pip learned: playing cures boredom"
+        },
+        {
+          "kind": "learned",
+          "text": "Pip learned: the shelter warms it up"
+        },
+        {
+          "kind": "learned",
+          "text": "Pip learned: sleep helps when tired"
+        },
+        {
+          "kind": "learned",
+          "text": "Pip learned: the river is dangerous"
+        },
+        {
+          "kind": "learned",
+          "text": "Pip learned: the shelter feels safe when scared"
+        },
+        {
+          "kind": "learned",
+          "text": "Pip learned: eating fixes hunger"
+        }
+      ],
+      "lastScores": [
+        ["rest", 0.32774263536374026],
+        ["idle", 0.2558652099310423],
+        ["social", 0.24221322684980065],
+        ["wander", 0.08130830864835933]
+      ],
+      "x": 110.24758256413418,
+      "dir": -1,
+      "asleep": false,
+      "health": 1,
+      "d": {
+        "hunger": 0.17684022603949012,
+        "cold": 0.21873697097662337,
+        "tired": 0.08400000000000006,
+        "bored": 0.06000000000000001,
+        "lonely": 0.09744826591657078,
+        "fear": 0
+      },
+      "aff": {
+        "hunger": {
+          "eat": 0.9118908711429251,
+          "play": 0.045019998178770115,
+          "rest": 0.02200857618392757,
+          "sleep": -0.02878194383630525,
+          "approach": 0.043335847110976336,
+          "wander": -0.05940400013242384,
+          "idle": -0.025325687099240962,
+          "want": 0.05997155885286493,
+          "vend": 0.05961317314755875,
+          "music": 0.04059560209869265,
+          "hug": 0.007533405420172868,
+          "social": 0.011077060261444532,
+          "poke": 0.1741720660973485
+        },
+        "cold": {
+          "eat": 0.03779183558802987,
+          "play": 0.082575071084548,
+          "rest": 0.6059476499656966,
+          "sleep": 0.05509064535927175,
+          "approach": 0.03899279545324436,
+          "wander": 0.12776969862172463,
+          "idle": 0.020410916683290915,
+          "want": 0.024582315044084917,
+          "vend": 0.07000669419710354,
+          "music": 0.0007787196642430861,
+          "hug": 0.07397166307279897,
+          "social": 0.023045794049840723,
+          "poke": 0.03134237055687792
+        },
+        "tired": {
+          "eat": 0.06357142401397985,
+          "play": -0.04996761494876398,
+          "rest": 0.04876172165314761,
+          "sleep": 1.2,
+          "approach": 0.004113700271396077,
+          "wander": -0.12155364093702306,
+          "idle": -0.10138773547742164,
+          "want": 0.07124429777050412,
+          "vend": 0.025495907789578436,
+          "music": 0.0765402820149023,
+          "hug": 0.0170029694987831,
+          "social": -0.06722936249528239,
+          "poke": -0.015046519977908065
+        },
+        "bored": {
+          "eat": 0.031061674782183468,
+          "play": 0.6624750773499188,
+          "rest": 0.03373805087056951,
+          "sleep": 0.005898366056808335,
+          "approach": 0.009959525523988636,
+          "wander": 0.03190778581606641,
+          "idle": 0.04173266617487662,
+          "want": 0.016982079704859744,
+          "vend": 0.04499419436436812,
+          "music": 0.14236501176146016,
+          "hug": 0.010468883344376083,
+          "social": 0.09799052833767197,
+          "poke": 0.2080703162125638
+        },
+        "lonely": {
+          "eat": 0.05936150299051762,
+          "play": 0.0074861985291608465,
+          "rest": 0.03092979407953773,
+          "sleep": 0.03658505672383089,
+          "approach": 0.5385945501566487,
+          "wander": 0.06284611596388755,
+          "idle": 0.03295862406296824,
+          "want": 0.0067204356484630344,
+          "vend": 0.06730984373292061,
+          "music": 0.049742435134281296,
+          "hug": 0.1923785672010066,
+          "social": 0.5474382696502154,
+          "poke": 0.011927465894844447
+        },
+        "fear": {
+          "eat": 0.023445284385052424,
+          "play": 0.1233962978950916,
+          "rest": 0.6933657185038823,
+          "sleep": 0.05035477550358379,
+          "approach": 0.2081671202073829,
+          "wander": 0.1278665427296482,
+          "idle": 0.059037397409535466,
+          "want": 0.02880801250876668,
+          "vend": 0.003890265699955178,
+          "music": 0.02829616586931591,
+          "hug": 0.13591866648910247,
+          "social": 0.19238392839226895,
+          "poke": 0.06656738812836684
+        }
+      },
+      "lex": {
+        "bees": {
+          "m": "bees",
+          "s": 0.09229585321324668,
+          "at": 1790774460000
+        },
+        "no": {
+          "m": "no",
+          "s": 0.09229585321324668,
+          "at": 1790774460000
+        }
+      },
+      "rel": {
+        "trust": 0.2,
+        "affection": 0.1,
+        "familiarity": 0
+      },
+      "act": {
+        "kind": "rest",
+        "dom": "cold",
+        "before": {
+          "hunger": 0.17684022603949012,
+          "cold": 0.21873697097662337,
+          "tired": 0.08400000000000006,
+          "bored": 0.06000000000000001,
+          "lonely": 0.09744826591657078,
+          "fear": 0
+        },
+        "start": 1790812800000,
+        "feedback": 0,
+        "tx": 110.2475825641342,
+        "until": 1790812817358.9172
+      },
+      "last": {
+        "kind": "wander",
+        "dom": "cold",
+        "before": {
+          "hunger": 0.1710123474328586,
+          "cold": 0.20995241543618237,
+          "tired": 0.07500000000000007,
+          "bored": 0.05000000000000001,
+          "lonely": 0.09457936689038304,
+          "fear": 0
+        },
+        "end": 1790812800000
+      },
+      "bias": {
+        "kind": "wander",
+        "until": 1790790548000,
+        "s": 1.5
+      },
+      "say": "!!",
+      "sayUntil": 1790790541500,
+      "nextChatter": 0,
+      "flags": {
+        "firstMeal": true,
+        "fellIn": true,
+        "freezing": false,
+        "nightIn": false,
+        "chased_butterfly": true,
+        "honey": true,
+        "fearNews": true,
+        "avoidedOnce": true,
+        "justAvoided": 1790801220000,
+        "stung": true,
+        "chased_squirrel": true,
+        "sheltered": true
+      },
+      "cause": null,
+      "beliefs": [],
+      "think": ["scared"],
+      "thinkUntil": 1790790542500,
+      "lastConsol": 1790812560000,
+      "sleptNight": false,
+      "wants": [],
+      "riverFear": 0.7329704057124392,
+      "inWater": null,
+      "moving": true,
+      "hugging": false,
+      "gazing": false,
+      "dancing": false,
+      "chaseLog": 1790809380000
+    },
+    {
+      "id": "muuj1mte2",
+      "name": "Moss",
+      "genome": {
+        "hue": 22,
+        "size": 0.8968011199675323,
+        "curiosity": 0.3244125120636654,
+        "agreeable": 0.477169162951376,
+        "sociability": 0.8639659825853109,
+        "hardiness": 0.24403626911663034,
+        "learnRate": 0.9411150589721345,
+        "lifespan": 13.996922981639068,
+        "syll": ["ki", "ba", "wu"]
+      },
+      "stage": "baby",
+      "hatchAt": 1790769600000,
+      "born": 1790769660000,
+      "dies": 1791978994145.6135,
+      "alive": true,
+      "parents": [],
+      "gen": 1,
+      "objVal": {
+        "hive": -0.5058884941027864,
+        "cactus": 0,
+        "squirrel": 0.10800000000000001,
+        "butterfly": 0.16000000000000006,
+        "red": -0.24,
+        "brown": 0
+      },
+      "kin": {
+        "muuj1mtd1": {
+          "familiarity": 1,
+          "affection": 0.28838455838753224,
+          "trust": 0.2
+        }
+      },
+      "robotRel": {
+        "familiarity": 0.10800000000000005,
+        "affection": 0.07160000000000012,
+        "trust": 0.18999999999999997
+      },
+      "skill": {
+        "cold:rest": 1,
+        "bored:play": 1,
+        "fear:rest": 1,
+        "hunger:eat": 1,
+        "lonely:social": 1,
+        "tired:sleep": 1
+      },
+      "news": [
+        {
+          "kind": "learned",
+          "text": "Moss learned: the shelter warms it up"
+        },
+        {
+          "kind": "learned",
+          "text": "Moss learned: playing cures boredom"
+        },
+        {
+          "kind": "learned",
+          "text": "Moss learned: the shelter feels safe when scared"
+        },
+        {
+          "kind": "learned",
+          "text": "Moss learned: eating fixes hunger"
+        },
+        {
+          "kind": "learned",
+          "text": "Moss learned: friends help when lonely"
+        },
+        {
+          "kind": "learned",
+          "text": "Moss learned: sleep helps when tired"
+        },
+        {
+          "kind": "learned",
+          "text": "Moss learned: the river is dangerous"
+        },
+        {
+          "kind": "word",
+          "text": "Moss can now say “bees”"
+        },
+        {
+          "kind": "word",
+          "text": "Moss can now say “no”"
+        }
+      ],
+      "lastScores": [
+        ["sleep", 0.5813563117909647],
+        ["rest", 0.2898467783555333],
+        ["play", 0.18069714703289316],
+        ["social", 0.005907629014516205]
+      ],
+      "x": 369.15144736082874,
+      "dir": 1,
+      "asleep": true,
+      "health": 1,
+      "d": {
+        "hunger": 0.09149799586532792,
+        "cold": 0.19759902916237912,
+        "tired": 0.22900000000000004,
+        "bored": 0.10000000000000003,
+        "lonely": 0.1396846635788891,
+        "fear": 0
+      },
+      "aff": {
+        "hunger": {
+          "eat": 1.1264612022993823,
+          "play": -0.03603558205320312,
+          "rest": -0.0341841656023139,
+          "sleep": -0.14232260019962262,
+          "approach": 0.07364035038617876,
+          "wander": -0.06793442370761052,
+          "idle": -0.013142428227263287,
+          "want": 0.012852669537798978,
+          "vend": 0.03608528341434439,
+          "music": 0.04528587558669869,
+          "hug": 0.00009111260298557689,
+          "social": -0.2580039450219894,
+          "poke": 0.49527229095597575
+        },
+        "cold": {
+          "eat": 0.054165350795833726,
+          "play": 0.058431437244511,
+          "rest": 1.1626363924019698,
+          "sleep": 0.030366268362375326,
+          "approach": 0.035771167797560025,
+          "wander": 0.057577053732915974,
+          "idle": 0.030978504769928226,
+          "want": 0.07071291183454484,
+          "vend": 0.01331303283395469,
+          "music": 0.05273072601986059,
+          "hug": 0.045604782841434446,
+          "social": 0.13452845418229056,
+          "poke": 0.07214790101179035
+        },
+        "tired": {
+          "eat": 0.024306544927390542,
+          "play": 0.0031650358204516706,
+          "rest": 0.026186609304754117,
+          "sleep": 1.2,
+          "approach": 0.0034200007404762366,
+          "wander": -0.0688794158660703,
+          "idle": -0.03558331241759341,
+          "want": 0.059472790129610854,
+          "vend": 0.047000698725522136,
+          "music": 0.015715466532408844,
+          "hug": 0.07720766377579957,
+          "social": -0.2519967656221093,
+          "poke": -0.02279918245034499
+        },
+        "bored": {
+          "eat": 0.03481817760475737,
+          "play": 0.8201808602344894,
+          "rest": 0.00004774781830641211,
+          "sleep": 0.06721127436046352,
+          "approach": 0.019593445936904336,
+          "wander": 0.029243605958022792,
+          "idle": -0.008405204515827266,
+          "want": 0.051210804240798304,
+          "vend": 0.025810765833642446,
+          "music": 0.09879075298751813,
+          "hug": 0.009152247308780349,
+          "social": 0.011367669847754776,
+          "poke": 0.3060047344729845
+        },
+        "lonely": {
+          "eat": 0.0031698654582143124,
+          "play": 0.016678000213476714,
+          "rest": 0.06999507865456663,
+          "sleep": -0.08649740491753899,
+          "approach": 0.3701678423058569,
+          "wander": 0.02023291069653853,
+          "idle": 0.0623682379553868,
+          "want": 0.07990454253875325,
+          "vend": 0.0017424507350021746,
+          "music": 0.06047429691732435,
+          "hug": 0.28875772944337663,
+          "social": 1.2,
+          "poke": 0.027254116110118798
+        },
+        "fear": {
+          "eat": 0.008665385470108379,
+          "play": 0.04914123515956199,
+          "rest": 1.091937124523145,
+          "sleep": 0.011944472658152936,
+          "approach": 0.18485682272005352,
+          "wander": 0.02932089417805339,
+          "idle": 0.016638322058201576,
+          "want": 0.07586498834791053,
+          "vend": 0.016996316373337157,
+          "music": 0.0011756112945414633,
+          "hug": 0.16035476207431187,
+          "social": 0.2377340522909134,
+          "poke": 0.031023660228208554
+        }
+      },
+      "lex": {
+        "bees": {
+          "m": "bees",
+          "s": 0.22291814711455032,
+          "at": 1790797260000
+        },
+        "no": {
+          "m": "no",
+          "s": 0.22291814711455032,
+          "at": 1790797260000
+        }
+      },
+      "rel": {
+        "trust": 0.2,
+        "affection": 0.1,
+        "familiarity": 0
+      },
+      "act": {
+        "kind": "sleep",
+        "dom": "tired",
+        "before": {
+          "hunger": 0.03858349223236718,
+          "cold": 0.0475125991439625,
+          "tired": 0.45300000000000024,
+          "bored": 0.10000000000000003,
+          "lonely": 0.02052859534023633,
+          "fear": 0
+        },
+        "start": 1790811840000,
+        "feedback": 0,
+        "tx": 369.15144736082874,
+        "until": 1790811840001
+      },
+      "last": {
+        "kind": "idle",
+        "dom": "tired",
+        "before": {
+          "hunger": 0.033071564770600435,
+          "cold": 0.03828951118157774,
+          "tired": 0.44400000000000023,
+          "bored": 0.09000000000000002,
+          "lonely": 0.03029095503500884,
+          "fear": 0
+        },
+        "end": 1790811840000
+      },
+      "bias": {
+        "kind": "wander",
+        "until": 1790810168000,
+        "s": 1.5
+      },
+      "say": "!!",
+      "sayUntil": 1790810161500,
+      "nextChatter": 0,
+      "flags": {
+        "fellIn": true,
+        "freezing": false,
+        "nightIn": false,
+        "firstMeal": true,
+        "music": true,
+        "chased_butterfly": true,
+        "chased_squirrel": true,
+        "honey": true,
+        "fearNews": true,
+        "avoidedOnce": true,
+        "justAvoided": 1790797260000,
+        "stung": true
+      },
+      "cause": null,
+      "beliefs": [],
+      "think": ["scared"],
+      "thinkUntil": 1790810162500,
+      "lastConsol": 1790801460000,
+      "sleptNight": true,
+      "wants": [],
+      "riverFear": 0.7528920471777076,
+      "inWater": null,
+      "moving": false,
+      "hugging": false,
+      "gazing": false,
+      "dancing": false,
+      "chaseLog": 1790810100000
+    }
+  ],
+  "sel": "muuj1mtd1",
+  "robot": {
+    "name": "Tock",
+    "x": 836.1208017287206,
+    "tx": 836.1208017287206,
+    "task": null,
+    "say": "bees, no!",
+    "sayUntil": 1790802483500,
+    "nextName": 0,
+    "nextWarn": 0,
+    "idleUntil": 1790812822487.89,
+    "moving": true,
+    "nextHaz": 1790802570000
+  },
+  "log": [
+    {
+      "t": 1790769660000,
+      "type": "hatch",
+      "text": "Pip hatched",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790769660000,
+      "type": "hatch",
+      "text": "Moss hatched",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790769720000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790769840000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790769900000,
+      "type": "fell-in",
+      "text": "Moss fell into the river",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790770020000,
+      "type": "word",
+      "text": "Moss heard \"mushroom\" (mushroom)",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790770020000,
+      "type": "word",
+      "text": "Moss heard \"no\" (no)",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790770020000,
+      "type": "robot-warn",
+      "text": "Tock warned Moss about the mushroom",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790770020000,
+      "type": "freezing",
+      "text": "Moss was freezing",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790770080000,
+      "type": "word",
+      "text": "Moss heard \"home\" (shelter)",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790770080000,
+      "type": "sitter-guided",
+      "text": "Tock led Moss to the shelter",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790770080000,
+      "type": "fell-in",
+      "text": "Pip fell into the river",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790770200000,
+      "type": "freezing",
+      "text": "Pip was freezing",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790770200000,
+      "type": "fell-in",
+      "text": "Pip fell into the river",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790770320000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790770620000,
+      "type": "word",
+      "text": "Pip heard \"home\" (shelter)",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790770620000,
+      "type": "sitter-guided",
+      "text": "Tock led Pip to the shelter",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790770800000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790771040000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790771220000,
+      "type": "fell-in",
+      "text": "Moss fell into the river",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790771280000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790771340000,
+      "type": "robot-warn",
+      "text": "Tock warned Moss about the mushroom",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790771340000,
+      "type": "freezing",
+      "text": "Moss was freezing",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790771460000,
+      "type": "sitter-guided",
+      "text": "Tock led Moss to the shelter",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790773140000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790773620000,
+      "type": "ate",
+      "text": "Moss ate",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790773980000,
+      "type": "chased",
+      "text": "Pip chased the butterfly",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790773980000,
+      "type": "music",
+      "text": "Moss played the music box",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790774040000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790774100000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790774340000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790774400000,
+      "type": "honey",
+      "text": "Pip got some honey",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790774460000,
+      "type": "word",
+      "text": "Pip heard \"bees\" (bees)",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790774460000,
+      "type": "word",
+      "text": "Pip heard \"no\" (no)",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790774460000,
+      "type": "robot-warn",
+      "text": "Tock warned Pip about the bees",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790774520000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790774940000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790775120000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790775180000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790775240000,
+      "type": "ate",
+      "text": "Moss ate",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790775600000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790775780000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790775840000,
+      "type": "chased",
+      "text": "Moss chased the butterfly",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790775960000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790776320000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790776380000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790776620000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790776680000,
+      "type": "honey",
+      "text": "Pip got some honey",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790776740000,
+      "type": "robot-warn",
+      "text": "Tock warned Pip about the bees",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790776800000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790776980000,
+      "type": "avoided",
+      "text": "Pip stopped at the river's edge",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790777280000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790777400000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790777460000,
+      "type": "chased",
+      "text": "Pip chased the butterfly",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790777580000,
+      "type": "honey",
+      "text": "Pip got some honey",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790777640000,
+      "type": "robot-warn",
+      "text": "Tock warned Pip about the bees",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790778000000,
+      "type": "chased",
+      "text": "Moss chased the butterfly",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790778060000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790778300000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790778840000,
+      "type": "forgot",
+      "text": "Pip forgot \"home\"",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790779560000,
+      "type": "avoided",
+      "text": "Pip stopped at the river's edge",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790779680000,
+      "type": "stung",
+      "text": "Pip was stung by the bees",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790779740000,
+      "type": "robot-warn",
+      "text": "Tock warned Pip about the bees",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790779740000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790779980000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790780100000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790780280000,
+      "type": "ate",
+      "text": "Moss ate",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790780400000,
+      "type": "chased",
+      "text": "Pip chased the butterfly",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790780400000,
+      "type": "ate",
+      "text": "Moss ate",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790781060000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790781060000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790781600000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790782140000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790782320000,
+      "type": "chased",
+      "text": "Pip chased the squirrel",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790782500000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790782680000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790782740000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790782800000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790782980000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790783040000,
+      "type": "honey",
+      "text": "Pip got some honey",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790783100000,
+      "type": "robot-warn",
+      "text": "Tock warned Pip about the bees",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790783220000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790783280000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790783400000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790783640000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790783820000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790785320000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790785680000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790786100000,
+      "type": "ate",
+      "text": "Moss ate",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790786280000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790786400000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790786640000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790786880000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790786940000,
+      "type": "forgot",
+      "text": "Moss forgot \"mushroom\"",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790786940000,
+      "type": "forgot",
+      "text": "Moss forgot \"no\"",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790787000000,
+      "type": "forgot",
+      "text": "Moss forgot \"home\"",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790787180000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790787300000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790787420000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790787780000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790787900000,
+      "type": "honey",
+      "text": "Pip got some honey",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790787960000,
+      "type": "robot-warn",
+      "text": "Tock warned Pip about the bees",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790788380000,
+      "type": "chased",
+      "text": "Moss chased the butterfly",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790789820000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790789940000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790790060000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790790540000,
+      "type": "stung",
+      "text": "Pip was stung by the bees",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790790840000,
+      "type": "ate",
+      "text": "Moss ate",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790791260000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790791260000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790791320000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790791380000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790791440000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790792100000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790792220000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790792340000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790792460000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790792640000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790792760000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790792940000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790793060000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790793060000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790793120000,
+      "type": "chased",
+      "text": "Pip chased the butterfly",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790793180000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790793840000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790793900000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790794140000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790794680000,
+      "type": "chased",
+      "text": "Moss chased the squirrel",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790794740000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790795220000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790796000000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790796060000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790796120000,
+      "type": "chased",
+      "text": "Pip chased the butterfly",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790796300000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790796420000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790796900000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790797140000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790797200000,
+      "type": "honey",
+      "text": "Moss got some honey",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790797260000,
+      "type": "word",
+      "text": "Moss heard \"bees\" (bees)",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790797260000,
+      "type": "word",
+      "text": "Moss heard \"no\" (no)",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790797260000,
+      "type": "robot-warn",
+      "text": "Tock warned Moss about the bees",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790797260000,
+      "type": "avoided",
+      "text": "Moss stopped at the river's edge",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790797320000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790797440000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790797560000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790797860000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790797980000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790798340000,
+      "type": "honey",
+      "text": "Moss got some honey",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790798400000,
+      "type": "robot-warn",
+      "text": "Tock warned Moss about the bees",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790798460000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790798640000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790798700000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790799000000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790799180000,
+      "type": "honey",
+      "text": "Moss got some honey",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790799240000,
+      "type": "robot-warn",
+      "text": "Tock warned Moss about the bees",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790799720000,
+      "type": "robot-warn",
+      "text": "Tock warned Moss about the bees",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790800920000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790801040000,
+      "type": "avoided",
+      "text": "Pip stopped at the river's edge",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790801100000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790801220000,
+      "type": "avoided",
+      "text": "Pip stopped at the river's edge",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790801280000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790801760000,
+      "type": "ate",
+      "text": "Moss ate",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790801820000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790802180000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790802420000,
+      "type": "honey",
+      "text": "Moss got some honey",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790802420000,
+      "type": "stung",
+      "text": "Moss was stung by the bees",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790802480000,
+      "type": "robot-warn",
+      "text": "Tock warned Moss about the bees",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790802780000,
+      "type": "chased",
+      "text": "Pip chased the butterfly",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790803200000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790803800000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790803920000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790803920000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790804040000,
+      "type": "chased",
+      "text": "Moss chased the butterfly",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790804640000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790805540000,
+      "type": "chased",
+      "text": "Moss chased the butterfly",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790806080000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790806260000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790806320000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790806440000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790806620000,
+      "type": "chased",
+      "text": "Pip chased the butterfly",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790806680000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790807160000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790807460000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790807460000,
+      "type": "chased",
+      "text": "Moss chased the butterfly",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790808060000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790808120000,
+      "type": "chased",
+      "text": "Pip chased the butterfly",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790808180000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790808720000,
+      "type": "chased",
+      "text": "Moss chased the butterfly",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790808900000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790809380000,
+      "type": "chased",
+      "text": "Pip chased the butterfly",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790809560000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790810100000,
+      "type": "chased",
+      "text": "Moss chased the squirrel",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790810160000,
+      "type": "honey",
+      "text": "Moss got some honey",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790810160000,
+      "type": "stung",
+      "text": "Moss was stung by the bees",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790810700000,
+      "type": "played",
+      "text": "Pip played with the ball",
+      "who": "muuj1mtd1"
+    },
+    {
+      "t": 1790810940000,
+      "type": "ate",
+      "text": "Moss ate",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790811060000,
+      "type": "played",
+      "text": "Moss played with the ball",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790811420000,
+      "type": "ate",
+      "text": "Moss ate",
+      "who": "muuj1mte2"
+    },
+    {
+      "t": 1790812560000,
+      "type": "ate",
+      "text": "Pip ate",
+      "who": "muuj1mtd1"
+    }
+  ],
+  "moments": [
+    {
+      "t": 1790769660000,
+      "text": "Pip hatched.",
+      "who": "Pip",
+      "id": "muuj1mtd1"
+    },
+    {
+      "t": 1790769660000,
+      "text": "Moss hatched.",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    },
+    {
+      "t": 1790769840000,
+      "text": "Pip ate for the first time.",
+      "who": "Pip",
+      "id": "muuj1mtd1"
+    },
+    {
+      "t": 1790769900000,
+      "text": "Moss fell into the river for the first time.",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    },
+    {
+      "t": 1790770020000,
+      "text": "Moss started learning a first word: \"mushroom\".",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    },
+    {
+      "t": 1790770080000,
+      "text": "Pip fell into the river for the first time.",
+      "who": "Pip",
+      "id": "muuj1mtd1"
+    },
+    {
+      "t": 1790770620000,
+      "text": "Pip started learning a first word: \"home\".",
+      "who": "Pip",
+      "id": "muuj1mtd1"
+    },
+    {
+      "t": 1790773620000,
+      "text": "Moss ate for the first time.",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    },
+    {
+      "t": 1790773980000,
+      "text": "Pip chased the butterfly for the first time.",
+      "who": "Pip",
+      "id": "muuj1mtd1"
+    },
+    {
+      "t": 1790773980000,
+      "text": "Moss cranked the music box and danced.",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    },
+    {
+      "t": 1790774400000,
+      "text": "Pip got honey from the beehive for the first time.",
+      "who": "Pip",
+      "id": "muuj1mtd1"
+    },
+    {
+      "t": 1790775840000,
+      "text": "Moss chased the butterfly for the first time.",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    },
+    {
+      "t": 1790776980000,
+      "text": "Pip stopped at the river's edge by itself.",
+      "who": "Pip",
+      "id": "muuj1mtd1"
+    },
+    {
+      "t": 1790779680000,
+      "text": "Pip was stung by bees for the first time.",
+      "who": "Pip",
+      "id": "muuj1mtd1"
+    },
+    {
+      "t": 1790782320000,
+      "text": "Pip chased the squirrel for the first time.",
+      "who": "Pip",
+      "id": "muuj1mtd1"
+    },
+    {
+      "t": 1790794680000,
+      "text": "Moss chased the squirrel for the first time.",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    },
+    {
+      "t": 1790797200000,
+      "text": "Moss got honey from the beehive for the first time.",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    },
+    {
+      "t": 1790797260000,
+      "text": "Moss started learning a first word: \"bees\".",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    },
+    {
+      "t": 1790797260000,
+      "text": "Moss stopped at the river's edge by itself.",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    },
+    {
+      "t": 1790800740000,
+      "text": "Pip spent a night in the shelter all by itself.",
+      "who": "Pip",
+      "id": "muuj1mtd1"
+    },
+    {
+      "t": 1790802420000,
+      "text": "Moss was stung by bees for the first time.",
+      "who": "Moss",
+      "id": "muuj1mte2"
+    }
+  ],
+  "chat": [],
+  "lastSeen": 1790812800000,
+  "graves": [],
+  "dreams": [
+    {
+      "t": 1790812800000,
+      "who": "Pip",
+      "text": "ball fly sky"
+    }
+  ],
+  "pending": [
+    {
+      "id": "muuj1mte2",
+      "name": "Moss",
+      "since": 1790769600000,
+      "until": 1790773620000,
+      "wx": 10.334015692699564
+    },
+    {
+      "id": "muuj1mtd1",
+      "name": "Pip",
+      "since": 1790769600000,
+      "until": 1790785200000,
+      "wx": 4.301310985807029
+    },
+    {
+      "id": "muuj1mte2",
+      "name": "Moss",
+      "since": 1790773620000,
+      "until": 1790785620000,
+      "wx": 4.2397189300981095
+    },
+    {
+      "id": "muuj1mte2",
+      "name": "Moss",
+      "since": 1790785620000,
+      "until": 1790797020000,
+      "wx": 10.847333898040448
+    },
+    {
+      "id": "muuj1mtd1",
+      "name": "Pip",
+      "since": 1790785200000,
+      "until": 1790800740000,
+      "wx": 6.721182858836669
+    },
+    {
+      "id": "muuj1mte2",
+      "name": "Moss",
+      "since": 1790797020000,
+      "until": 1790801460000,
+      "wx": 7.1714466048790015
+    },
+    {
+      "id": "muuj1mtd1",
+      "name": "Pip",
+      "since": 1790800740000,
+      "until": 1790812560000,
+      "wx": 6.000442861193266
+    }
+  ],
+  "patchX": [470, 515, 560],
+  "bushes": [
+    {
+      "x": 1520,
+      "n": 4,
+      "g": 0.9999999999999948
+    }
+  ],
+  "fauna": {
+    "hive": {
+      "x": 1060,
+      "honey": 1,
+      "g": 0.8666666666666831,
+      "anger": 0
+    },
+    "squirrel": {
+      "x": 380,
+      "up": true,
+      "tx": 501.9274065467911,
+      "upUntil": 1790822100000
+    },
+    "butterflies": [
+      {
+        "x": 2019.5786943133828,
+        "y": 250,
+        "ph": 129600,
+        "drift": 0
+      },
+      {
+        "x": 40,
+        "y": 260,
+        "ph": 129602,
+        "drift": 0
+      }
+    ],
+    "swarm": null,
+    "shroomT": 1790813160000
+  },
+  "pos": {
+    "board": 830,
+    "music": 970,
+    "vendor": 1760
+  },
+  "shelters": [
+    {
+      "x": 95,
+      "integ": 1
+    }
+  ],
+  "bridge": false,
+  "bush": {
+    "n": 2,
+    "g": 0
+  },
+  "vendor": {
+    "stock": 3,
+    "day": 124362
+  },
+  "musicUntil": 1790774010000,
+  "board": {
+    "i": -1,
+    "until": 0,
+    "taught": true,
+    "byKith": false
+  },
+  "_storm": false,
+  "_freeze": false,
+  "_musicLog": 1790773980000
+}

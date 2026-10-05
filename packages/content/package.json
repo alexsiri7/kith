@@ -15,6 +15,7 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@kith/engine": "workspace:*"
+    "@kith/engine": "workspace:*",
+    "zod": "^4.6.5"
   }
 }
