@@ -154,13 +154,19 @@ function importEntities(
       x: save.robot.x,
       state: { name: save.robot.name },
     },
-    ...save.items.map((item) => ({
-      id: item.id,
-      type: itemType(item.type),
-      x: item.x,
-      state: { born: toSim(item.born), rotten: item.rotten ?? false },
-      ...(item.held === true && { heldByPlayer: true }),
-    })),
+    ...save.items.map((item) => {
+      const type = itemType(item.type);
+      return {
+        id: item.id,
+        type,
+        x: item.x,
+        state:
+          registry.types.get(type)?.category === 'food'
+            ? { born: toSim(item.born), rotten: item.rotten ?? false }
+            : {},
+        ...(item.held === true && { heldByPlayer: true }),
+      };
+    }),
     { id: 'river', type: 'river', x: RIVER_X, state: { bridge: save.bridge } },
   ];
   return Object.fromEntries(

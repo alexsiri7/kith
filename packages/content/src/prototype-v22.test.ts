@@ -34,6 +34,24 @@ describe('prototype v2.2 import', () => {
     expect(world.selectedKith).toBe(fixture.sel);
   });
 
+  it('falls back to a living Kith when sel is missing', () => {
+    expect(load({ ...fixture, sel: null }).selectedKith).toBe(
+      fixture.kith[0]!.id,
+    );
+  });
+
+  it('keeps a dream whose Kith was renamed, without an author', () => {
+    // The prototype's Rename button changes a Kith's name but not the names
+    // its dreams were recorded under.
+    const renamed = {
+      ...fixture,
+      kith: fixture.kith.map((k) => ({ ...k, name: `${k.name}!` })),
+    };
+    expect(load(renamed).dreams).toEqual([
+      { simTime: world.clock.simTime, kith: null, text: 'ball fly sky' },
+    ]);
+  });
+
   it('keeps the player and their history', () => {
     expect(world.player.name).toBe('Alex');
     expect(world.player.coins).toBe(fixture.coins);
@@ -55,6 +73,13 @@ describe('prototype v2.2 import', () => {
     for (const item of fixture.items) {
       expect(typeOf(world, item.id)).toBe(mapped[item.type]);
     }
+    const ball = fixture.items.find((item) => item.type === 'ball')!;
+    const mushroom = fixture.items.find((item) => item.type === 'shroomB')!;
+    expect(world.entities[ball.id]?.state).toEqual({});
+    expect(world.entities[mushroom.id]?.state).toEqual({
+      born: expect.any(Number),
+      rotten: false,
+    });
     expect(typeOf(world, 'tock')).toBe('tock');
     expect(world.entities.river?.state).toEqual({ bridge: fixture.bridge });
   });
