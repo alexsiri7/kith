@@ -1,8 +1,8 @@
 ---
 created: '2026-10-05'
-github_issue: null
+github_issue: 1
 id: '004'
-status: draft
+status: idea
 title: Kith is live at kith.interstellarai.net, playable from phone and web, with
   the world saved in a database
 updated: '2026-10-05'
@@ -26,4 +26,12 @@ Alex wants to see the game come to life and play it day to day. Today the only p
 
 ## Issues
 
-_None yet._
+- #1 — Unpack kith-prototype.zip into prototype/ and commit it
+- #29 — Serve the v2.2 game from the server at /
+- #30 — Provision Kith on Railway at kith.interstellarai.net
+- #31 — Sign in once per device and stay signed in
+- #32 — Save each player's world in Postgres and load it on any device
+- #33 — Run the creatures' Claude mind through the server
+- #34 — Make Kith installable on the phone (home screen, full screen)
+- #35 — Bring an existing browser world onto the server once
+- #36 — Live check: Kith works end to end at kith.interstellarai.net
