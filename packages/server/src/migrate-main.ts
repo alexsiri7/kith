@@ -1,10 +1,14 @@
 import pg from 'pg';
-import { loadConfig } from './config.js';
 import { migrateDatabase } from './migrations.js';
 
-const config = loadConfig(process.env);
+// Only the database is needed here, so the server's other required settings
+// must not be able to block a pre-deploy migration.
+const databaseUrl = process.env.DATABASE_URL;
+if (databaseUrl === undefined || databaseUrl === '') {
+  throw new Error('DATABASE_URL must be set');
+}
 const pool = new pg.Pool({
-  connectionString: config.databaseUrl,
+  connectionString: databaseUrl,
   connectionTimeoutMillis: 5_000,
 });
 try {

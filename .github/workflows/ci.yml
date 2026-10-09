@@ -40,9 +40,6 @@ jobs:
         run: node packages/server/dist/migrate-main.js
         env:
           DATABASE_URL: postgres://kith:kith@localhost:5432/kith
-          ANTHROPIC_API_KEY: ci-placeholder
-          APP_ORIGIN: http://localhost:3000
-          SESSION_SECRET: ci-placeholder-session-secret-0123456789
 
   image:
     runs-on: ubuntu-latest
