@@ -14,7 +14,8 @@ const pool = new pg.Pool({
 });
 const app = buildServer({
   checkDatabase: () => pool.query('SELECT 1'),
-  // Same relative path from src/ (tests) and dist/ (image): packages/client/dist.
+  // Same relative paths from src/ (tests) and dist/ (image).
+  gameDir: fileURLToPath(new URL('../../../prototype/dist/', import.meta.url)),
   clientDir: fileURLToPath(new URL('../../client/dist/', import.meta.url)),
 });
 app.addHook('onClose', () => pool.end());

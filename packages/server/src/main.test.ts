@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ServerOptions } from './index.js';
 
@@ -57,11 +58,14 @@ describe('server entrypoint', () => {
     expect(listen).toHaveBeenCalledWith({ port: 3000, host: '0.0.0.0' });
   });
 
-  it('serves the client build', async () => {
+  it('serves the prototype build and the client build', async () => {
     await import('./main.js');
 
     expect(buildServer).toHaveBeenCalledWith(
       expect.objectContaining({
+        gameDir: fileURLToPath(
+          new URL('../../../prototype/dist/', import.meta.url),
+        ),
         clientDir: expect.stringMatching(/packages[\\/]client[\\/]dist[\\/]?$/),
       }),
     );
