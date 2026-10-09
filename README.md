@@ -56,18 +56,18 @@ The server also serves the client's Vite build (`packages/client/dist`) as stati
 
 ### Persistence
 
-Worlds are stored in Postgres. `packages/server/src/migrations.ts` holds the schema as an ordered list of SQL migrations; `node packages/server/dist/migrate-main.js` applies the ones not yet recorded in `schema_migrations` and runs as Railway's pre-deploy command, so the schema is current before a new version takes traffic.
+Worlds are stored in Postgres. `packages/server/src/migrations.ts` holds the schema as an ordered list of SQL migrations; `node packages/server/dist/migrate-main.js` (which needs only `DATABASE_URL`) applies the ones not yet recorded in `schema_migrations` and runs as Railway's pre-deploy command, so the schema is current before a new version takes traffic.
 
 | Table              | Holds                                                                                                          |
 | ------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `users`            | Players.                                                                                                       |
 | `worlds`           | One row per world: owner, name, current `version`, sim time, seed, last-seen time and scheduler lease.         |
 | `world_snapshots`  | The full world (the engine's save JSON) at every version.                                                      |
-| `world_events`     | Append-only game events, numbered per world; `pruneEvents` drops those older than 30 days.                     |
+| `world_events`     | Append-only game events, numbered per world. Nothing prunes them yet (see below).                              |
 | `moments`/`dreams` | The memory book: every moment and dream a world has held, kept forever even after the world itself drops them. |
 | `commands`         | Every player command received, numbered per world, for replay and debugging.                                   |
 
-`PgWorldStore` (`packages/server/src/world-store.ts`) implements the `WorldStore` interface. `save(worldId, baseVersion, world, events)` writes the next version only if the stored version is still `baseVersion` and throws `WorldVersionConflict` otherwise, so two writers never silently overwrite each other. Loaded snapshots go through the engine's save migrations and validation. `pruneEvents(now)` applies the event retention.
+`PgWorldStore` (`packages/server/src/world-store.ts`) implements the `WorldStore` interface. `save(worldId, baseVersion, world, events)` writes the next version only if the stored version is still `baseVersion` and throws `WorldVersionConflict` otherwise, so two writers never silently overwrite each other. Loaded snapshots go through the engine's save migrations and validation. `pruneEvents(now)` implements the event retention — routine events older than 30 days are deleted — but nothing calls it yet: until a scheduler does, `world_events` grows without bound.
 
 Build and run the image locally:
 
