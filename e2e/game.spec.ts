@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { clientMountPath } from '../packages/server/src/client-mount.js';
 
 interface DrawnEgg {
   x: number;
@@ -7,34 +8,31 @@ interface DrawnEgg {
   height: number;
 }
 
+// The prototype's classic scripts declare these at the top level, so the
+// page's global scope shares them with page.evaluate.
 declare global {
+  var drawEgg: (egg: { x: number }, t: number) => void;
+  const g: CanvasRenderingContext2D;
+  const GROUND: number;
   interface Window {
     drawnEggs: DrawnEgg[];
   }
 }
 
-// Watches the canvas API so the test sees an egg drawn, not just one in the
-// world's state: drawEgg in prototype/ui.js is the only 17x23 ellipse drawn.
+// Wraps the game's own drawEgg so the test sees an egg drawn, not just one in
+// the world's state, at the canvas pixel drawEgg is about to anchor it to.
 function recordEggs(): void {
   window.drawnEggs = [];
-  const ellipse = CanvasRenderingContext2D.prototype.ellipse;
-  CanvasRenderingContext2D.prototype.ellipse = function (
-    x,
-    y,
-    rx,
-    ry,
-    ...rest
-  ) {
-    if (this.canvas.id === 'world' && rx === 17 && ry === 23) {
-      const at = this.getTransform().transformPoint({ x, y });
-      window.drawnEggs.push({
-        x: at.x,
-        y: at.y,
-        width: this.canvas.width,
-        height: this.canvas.height,
-      });
-    }
-    return ellipse.call(this, x, y, rx, ry, ...rest);
+  const original = drawEgg;
+  drawEgg = (egg, t) => {
+    const at = g.getTransform().transformPoint({ x: egg.x, y: GROUND });
+    window.drawnEggs.push({
+      x: at.x,
+      y: at.y,
+      width: g.canvas.width,
+      height: g.canvas.height,
+    });
+    original(egg, t);
   };
 }
 
@@ -61,18 +59,18 @@ for (const viewport of viewports) {
     });
 
     test('starts a world and draws an egg', async ({ page }) => {
-      await page.addInitScript(recordEggs);
+      const press = (target: Locator) =>
+        viewport.touch ? target.tap() : target.click();
       await page.goto('/');
 
       const intro = page.locator('#intro');
       await expect(intro).toBeVisible();
+      await page.evaluate(recordEggs);
       await expectNoHorizontalScroll(page);
       expect(await page.evaluate(() => window.drawnEggs.length)).toBe(0);
 
       await page.locator('#pname').fill('Alex');
-      const placeEgg = intro.getByRole('button', { name: 'Place the egg' });
-      if (viewport.touch) await placeEgg.tap();
-      else await placeEgg.click();
+      await press(intro.getByRole('button', { name: 'Place the egg' }));
       await expect(intro).toBeHidden();
 
       await expect
@@ -89,19 +87,29 @@ for (const viewport of viewports) {
         )
         .toBe(true);
       await expect(page.locator('#world')).toBeInViewport();
-      await expect(page.locator('#msg')).toBeVisible();
-      await expect(page.getByRole('tab', { name: 'Care' })).toBeVisible();
+
+      const shop = page.getByRole('tab', { name: 'Shop' });
+      await press(shop);
+      await expect(shop).toHaveAttribute('aria-selected', 'true');
+
+      // An egg can't hear yet, so a sent message only empties the box.
+      const msg = page.locator('#msg');
+      await press(msg);
+      await expect(msg).toBeFocused();
+      await msg.fill('hello');
+      await press(page.locator('#talk').getByRole('button', { name: 'Say' }));
+      await expect(msg).toHaveValue('');
       await expectNoHorizontalScroll(page);
     });
   });
 }
 
-test('keeps the new client at /next/', async ({ page }) => {
+test('keeps the new client at its mount', async ({ page }) => {
   const failed: string[] = [];
   page.on('response', (response) => {
     if (!response.ok()) failed.push(response.url());
   });
-  await page.goto('/next/');
+  await page.goto(`${clientMountPath}/`);
   await page.waitForLoadState('networkidle');
   expect(failed).toEqual([]);
   await expect(page.locator('canvas#world')).toBeAttached();
