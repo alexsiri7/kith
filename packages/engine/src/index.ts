@@ -1,7 +1,9 @@
+export * from './affordance.js';
 export * from './clock.js';
 export type * from './command.js';
 export * from './entity.js';
 export type * from './event.js';
+export * from './interact.js';
 export * from './registry.js';
 export * from './rng.js';
 export * from './save.js';

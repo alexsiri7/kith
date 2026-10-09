@@ -17,6 +17,7 @@ const type = (id: string, category: EntityType['category']): EntityType => ({
 
 const registry = createRegistry({
   types: [type('ball', 'toy'), type('doll', 'toy'), type('cake', 'food')],
+  needs: [],
   meanings: [],
   verbs: [],
 });

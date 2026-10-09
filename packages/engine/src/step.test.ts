@@ -1,11 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import type { Command } from './command.js';
 import type { GameEvent } from './event.js';
+import { createRegistry } from './registry.js';
 import { nextFloat, nextUint32, seedStream, type RngState } from './rng.js';
 import { CATCH_UP_STEP_MS, catchUp, step, type StepContext } from './step.js';
 import { createWorld, serialiseWorld, type World } from './world.js';
 
+const registry = createRegistry({
+  types: [],
+  needs: [],
+  meanings: [],
+  verbs: [],
+});
+
 const live: StepContext = {
+  registry,
   presence: { watching: true, cameraX: 0, handX: null },
   live: true,
 };
@@ -126,7 +135,7 @@ describe('step', () => {
 describe('catchUp', () => {
   it('advances to the target time in one-minute steps', () => {
     const target = 10 * CATCH_UP_STEP_MS + 1234;
-    const { world } = catchUp(createWorld(5), target);
+    const { world } = catchUp(createWorld(5), registry, target);
     expect(world.clock.simTime).toBe(target);
   });
 
@@ -140,17 +149,18 @@ describe('catchUp', () => {
       500,
     ]) {
       world = step(world, dtMs, [], {
+        registry,
         presence: { watching: false },
         live: false,
       }).world;
     }
-    expect(serialiseWorld(catchUp(createWorld(8), target).world)).toBe(
-      serialiseWorld(world),
-    );
+    expect(
+      serialiseWorld(catchUp(createWorld(8), registry, target).world),
+    ).toBe(serialiseWorld(world));
   });
 
   it('refuses to go back in time', () => {
     const { world } = step(createWorld(5), 1000, [], live);
-    expect(() => catchUp(world, 500)).toThrow(RangeError);
+    expect(() => catchUp(world, registry, 500)).toThrow(RangeError);
   });
 });

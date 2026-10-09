@@ -39,7 +39,7 @@ const types: EntityType[] = [
     sprite: 'ball',
   },
 ];
-const registry = createRegistry({ types, meanings: [], verbs: [] });
+const registry = createRegistry({ types, needs: [], meanings: [], verbs: [] });
 
 function sampleWorld(): World {
   const world = createWorld(7);

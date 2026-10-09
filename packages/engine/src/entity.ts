@@ -1,10 +1,12 @@
 import { z } from 'zod';
+import type { AffordanceDef } from './affordance.js';
 import type { Registry } from './registry.js';
 import type { EntityId } from './world.js';
 
 export type TypeId = string;
 export type MeaningId = string;
 export type VerbId = string;
+export type NeedId = string;
 export type SpriteRef = string;
 
 export type Category =
@@ -35,11 +37,6 @@ export interface Perception {
   readonly moving?: boolean;
   readonly hiddenAtNight?: boolean;
   readonly sky?: boolean;
-}
-
-/** Only the verb for now; affordances (#7) add actors, approach and outcomes. */
-export interface AffordanceDef {
-  readonly verb: VerbId;
 }
 
 /**
@@ -73,6 +70,8 @@ export interface Entity<S = unknown> {
   readonly state: S;
   readonly carriedBy?: EntityId;
   readonly heldByPlayer?: boolean;
+  /** Sim time until which each verb is refused on this entity. */
+  readonly cooldowns?: Readonly<Record<VerbId, number>>;
 }
 
 /** Key order here is the entity's canonical JSON order. */
@@ -84,6 +83,7 @@ export const entitySchema: z.ZodType<Entity> = z.object({
   state: z.unknown(),
   carriedBy: z.string().exactOptional(),
   heldByPlayer: z.boolean().exactOptional(),
+  cooldowns: z.record(z.string(), z.number()).exactOptional(),
 });
 
 export interface EntityInit extends Omit<Entity, 'state'> {
