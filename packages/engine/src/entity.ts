@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { AffordanceDef } from './affordance.js';
 import type { Registry } from './registry.js';
 import type { EntityId } from './world.js';
 
@@ -37,11 +38,6 @@ export interface Perception {
   readonly sky?: boolean;
 }
 
-/** Only the verb for now; affordances (#7) add actors, approach and outcomes. */
-export interface AffordanceDef {
-  readonly verb: VerbId;
-}
-
 /**
  * A zone spans the declaring entity's body footprint, `[x - w/2, x + w/2]`.
  * `passableWhen` names a boolean state field that makes it safe to cross,
@@ -73,6 +69,8 @@ export interface Entity<S = unknown> {
   readonly state: S;
   readonly carriedBy?: EntityId;
   readonly heldByPlayer?: boolean;
+  /** Sim time until which each verb is refused on this entity. */
+  readonly cooldowns?: Readonly<Record<VerbId, number>>;
 }
 
 /** Key order here is the entity's canonical JSON order. */
@@ -84,6 +82,7 @@ export const entitySchema: z.ZodType<Entity> = z.object({
   state: z.unknown(),
   carriedBy: z.string().exactOptional(),
   heldByPlayer: z.boolean().exactOptional(),
+  cooldowns: z.record(z.string(), z.number()).exactOptional(),
 });
 
 export interface EntityInit extends Omit<Entity, 'state'> {

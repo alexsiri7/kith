@@ -1,5 +1,7 @@
 import type { Command } from './command.js';
 import type { GameEvent } from './event.js';
+import { interact } from './interact.js';
+import type { Registry } from './registry.js';
 import type { World } from './world.js';
 
 export type Presence =
@@ -11,6 +13,7 @@ export type Presence =
     };
 
 export interface StepContext {
+  readonly registry: Registry;
   readonly presence: Presence;
   /** False while catching up: systems may step coarsely. */
   readonly live: boolean;
@@ -23,23 +26,18 @@ export interface StepResult {
 
 export const CATCH_UP_STEP_MS = 60_000;
 
-const catchUpContext: StepContext = {
-  presence: { watching: false },
-  live: false,
-};
-
 /**
  * Advances the world by `dtMs` game milliseconds, applying `commands` in
  * order. Pure: returns a new world and never mutates its input.
  *
- * Commands that act on entities have no effect until the world holds
- * entities for them to act on.
+ * `use` is the player's interaction through the target's affordances and
+ * does nothing when refused. Other commands that act on entities have no
+ * effect yet.
  */
 export function step(
   world: World,
   dtMs: number,
   commands: readonly Command[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ctx: StepContext,
 ): StepResult {
   if (!Number.isFinite(dtMs) || dtMs < 0) {
@@ -49,16 +47,31 @@ export function step(
     ...world,
     clock: { ...world.clock, simTime: world.clock.simTime + dtMs },
   };
+  const events: GameEvent[] = [];
   for (const command of commands) {
     if (command.type === 'select') {
       next = { ...next, selectedKith: command.kith };
+    } else if (command.type === 'use') {
+      const result = interact(next, ctx.registry, {
+        actor: { kind: 'player' },
+        target: command.entity,
+        verb: command.verb,
+      });
+      if (result.ok) {
+        next = result.world;
+        events.push(...result.events);
+      }
     }
   }
-  return { world: next, events: [] };
+  return { world: next, events };
 }
 
 /** Steps unattended in coarse one-minute steps up to `toSimTime`. */
-export function catchUp(world: World, toSimTime: number): StepResult {
+export function catchUp(
+  world: World,
+  registry: Registry,
+  toSimTime: number,
+): StepResult {
   if (!(toSimTime >= world.clock.simTime)) {
     throw new RangeError(
       `cannot catch up from ${world.clock.simTime} to ${toSimTime}`,
@@ -69,7 +82,11 @@ export function catchUp(world: World, toSimTime: number): StepResult {
   let remaining = toSimTime - world.clock.simTime;
   while (remaining > 0) {
     const dtMs = Math.min(CATCH_UP_STEP_MS, remaining);
-    const result = step(current, dtMs, [], catchUpContext);
+    const result = step(current, dtMs, [], {
+      registry,
+      presence: { watching: false },
+      live: false,
+    });
     current = result.world;
     events.push(...result.events);
     remaining -= dtMs;

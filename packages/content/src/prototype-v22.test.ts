@@ -104,7 +104,11 @@ describe('prototype v2.2 import', () => {
   it('round-trips and steps like any other world', () => {
     expect(load(JSON.parse(serialiseWorld(world)))).toEqual(world);
     expect(() =>
-      step(world, 60_000, [], { presence: { watching: false }, live: false }),
+      step(world, 60_000, [], {
+        registry,
+        presence: { watching: false },
+        live: false,
+      }),
     ).not.toThrow();
   });
 

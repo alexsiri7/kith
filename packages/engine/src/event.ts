@@ -18,6 +18,21 @@ export type GameEvent =
       readonly target: EntityId;
     }
   | {
+      readonly type: 'gotHoney';
+      readonly actor: EntityId;
+      readonly target: EntityId;
+    }
+  | {
+      readonly type: 'pricked';
+      readonly actor: EntityId;
+      readonly target: EntityId;
+    }
+  | {
+      readonly type: 'sick';
+      readonly actor: EntityId;
+      readonly target: EntityId;
+    }
+  | {
       readonly type: 'fellIn';
       readonly actor: EntityId;
       readonly target: EntityId;
