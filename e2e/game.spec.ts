@@ -14,6 +14,12 @@ declare global {
   var drawEgg: (egg: { x: number }, t: number) => void;
   const g: CanvasRenderingContext2D;
   const GROUND: number;
+  const SHOP: { egg: { price: number } };
+  const world: {
+    simTime: number;
+    coins: number;
+    creature: { dies: number };
+  };
   interface Window {
     drawnEggs: DrawnEgg[];
   }
@@ -58,9 +64,10 @@ for (const viewport of viewports) {
       isMobile: viewport.touch,
     });
 
+    const press = (target: Locator) =>
+      viewport.touch ? target.tap() : target.click();
+
     test('starts a world and draws an egg', async ({ page }) => {
-      const press = (target: Locator) =>
-        viewport.touch ? target.tap() : target.click();
       await page.goto('/');
 
       const intro = page.locator('#intro');
@@ -100,6 +107,49 @@ for (const viewport of viewports) {
       await press(page.locator('#talk').getByRole('button', { name: 'Say' }));
       await expect(msg).toHaveValue('');
       await expectNoHorizontalScroll(page);
+    });
+
+    test('opens and closes every overlay', async ({ page }) => {
+      await page.goto('/');
+      await page.locator('#pname').fill('Alex');
+      await press(page.getByRole('button', { name: 'Place the egg' }));
+      await expect(page.locator('#intro')).toBeHidden();
+
+      // Skipping time counts as being away, so the game welcomes you back.
+      await press(page.getByRole('tab', { name: 'Time' }));
+      await press(page.getByRole('button', { name: 'Skip 1 hour' }));
+      const away = page.locator('#away');
+      await expect(away).toBeVisible();
+      await expectNoHorizontalScroll(page);
+      await press(away.getByRole('button'));
+      await expect(away).toBeHidden();
+
+      // A new world can't afford an egg yet, and earning one takes days.
+      await page.evaluate(() => {
+        world.coins = SHOP.egg.price;
+      });
+      await press(page.getByRole('tab', { name: 'Shop' }));
+      await press(
+        page.locator('.sku', { hasText: 'Adopt an egg' }).getByRole('button'),
+      );
+      const eggname = page.locator('#eggname');
+      await expect(eggname).toBeVisible();
+      await expectNoHorizontalScroll(page);
+      await press(page.locator('#eggnm'));
+      await page.locator('#eggnm').fill('Nova');
+      await press(eggname.getByRole('button', { name: 'Name it' }));
+      await expect(eggname).toBeHidden();
+      await expect(page.locator('#roster')).toContainText('Nova');
+
+      // Old age would otherwise take about two weeks of game time.
+      await page.evaluate(() => {
+        world.creature.dies = world.simTime;
+      });
+      const death = page.locator('#death');
+      await expect(death).toBeVisible();
+      await expectNoHorizontalScroll(page);
+      await press(death.getByRole('button', { name: 'Go back to the others' }));
+      await expect(death).toBeHidden();
     });
   });
 }
