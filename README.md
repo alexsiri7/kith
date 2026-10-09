@@ -33,6 +33,8 @@ pnpm format      # apply Prettier
 
 CI (`.github/workflows/ci.yml`) runs install, typecheck, lint, test and build on every pull request and on `main`, and builds the Docker image and checks that it serves `/healthz` and the client.
 
+Production runs on Railway at <https://kith.interstellarai.net>, declared in `.railway/railway.ts`; deploys, variables, DNS, backups and restores are described in [Operations](docs/operations.md).
+
 ## Server
 
 `packages/server` validates its environment at startup and refuses to start, listing every problem, if any of it is invalid:
@@ -46,7 +48,7 @@ CI (`.github/workflows/ci.yml`) runs install, typecheck, lint, test and build on
 | `APP_ORIGIN`        | yes      | Public origin, e.g. `https://kith.example` (no path). |
 | `SESSION_SECRET`    | yes      | At least 32 characters.                               |
 
-`GET /healthz` answers as long as the process is up; `GET /readyz` answers 200 only while Postgres responds to `SELECT 1` and 503 otherwise (Railway's deploy healthcheck, see `railway.json`). Logs are JSON lines; each request carries an `x-request-id` (taken from the incoming header or generated) that appears as `reqId` in its log lines and is echoed in the response.
+`GET /healthz` answers as long as the process is up; `GET /readyz` answers 200 only while Postgres responds to `SELECT 1` and 503 otherwise (Railway's deploy healthcheck, see [Operations](docs/operations.md)). Logs are JSON lines; each request carries an `x-request-id` (taken from the incoming header or generated) that appears as `reqId` in its log lines and is echoed in the response.
 
 The server also serves the client's Vite build (`packages/client/dist`) as static files. One Railway service therefore serves both the app and the API from one origin: one deploy, no CORS or cross-site cookies, and the client always ships with the server version that runs the same engine. A separate static deploy was rejected for adding a second pipeline and allowing client/server version skew for no benefit at this stage.
 
