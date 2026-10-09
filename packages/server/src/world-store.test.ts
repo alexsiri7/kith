@@ -3,6 +3,8 @@ import { MIGRATIONS, registry } from '@kith/content';
 import {
   createEntity,
   createWorld,
+  deserialiseWorld,
+  SCHEMA_VERSION,
   type Command,
   type GameEvent,
   type World,
@@ -83,12 +85,14 @@ describe.skipIf(databaseUrl === undefined)('Postgres persistence', () => {
   }
 
   describe('migrations', () => {
-    it('create the schema in an empty database', async () => {
+    it('create the schema in an empty database, once when run twice at once', async () => {
       expect(await tableNames()).toEqual([]);
 
-      expect(await migrateDatabase(pool)).toEqual(
-        SCHEMA_MIGRATIONS.map((m) => m.name),
-      );
+      const runs = await Promise.all([
+        migrateDatabase(pool),
+        migrateDatabase(pool),
+      ]);
+      expect(runs.flat()).toEqual(SCHEMA_MIGRATIONS.map((m) => m.name));
       expect(await tableNames()).toEqual([
         'commands',
         'dreams',
@@ -148,6 +152,50 @@ describe.skipIf(databaseUrl === undefined)('Postgres persistence', () => {
       };
       expect(await store.save(id, 1, next, [ate])).toBe(2);
       expect(await store.load(id)).toEqual({ id, version: 2, world: next });
+    });
+
+    it('upgrades a snapshot written under an older schema when loading it', async () => {
+      const id = await store.create(ownerId, 'Garden', sampleWorld());
+      const prototypeSave = {
+        v: 1,
+        seed: 7,
+        simTime: 1_000_000,
+        coins: 3,
+        presenceMs: 0,
+        presenceCoins: 0,
+        playerName: 'Alex',
+        sel: 'pip',
+        kith: [
+          {
+            id: 'pip',
+            name: 'Pip',
+            stage: 'child',
+            hatchAt: 0,
+            born: 500,
+            dies: null,
+            alive: true,
+            health: 1,
+            x: 280,
+          },
+        ],
+        robot: { name: 'Tock', x: 100 },
+        items: [],
+        log: [],
+        moments: [],
+        dreams: [],
+        pending: [],
+        bridge: false,
+      };
+      await pool.query(
+        'UPDATE world_snapshots SET state = $2 WHERE world_id = $1',
+        [id, JSON.stringify(prototypeSave)],
+      );
+
+      const loaded = await store.load(id);
+      expect(loaded?.world.schemaVersion).toBe(SCHEMA_VERSION);
+      expect(loaded?.world).toEqual(
+        deserialiseWorld(JSON.stringify(prototypeSave), registry, MIGRATIONS),
+      );
     });
 
     it('loads nothing for an unknown world', async () => {
