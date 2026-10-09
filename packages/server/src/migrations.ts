@@ -84,6 +84,13 @@ export const SCHEMA_MIGRATIONS: readonly SchemaMigration[] = [
       );
     `,
   },
+  {
+    name: '002_google_sign_in',
+    sql: `
+      -- Nullable only because 001 created users without it; sign-in always sets it.
+      ALTER TABLE users ADD COLUMN google_subject text UNIQUE;
+    `,
+  },
 ];
 
 // Arbitrary, but fixed: every process migrating this database must agree on it.

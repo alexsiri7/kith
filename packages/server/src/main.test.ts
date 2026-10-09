@@ -7,6 +7,8 @@ const validEnv = {
   ANTHROPIC_API_KEY: 'test-key',
   APP_ORIGIN: 'http://localhost:3000',
   SESSION_SECRET: 'test-session-secret-0123456789abcdef',
+  GOOGLE_CLIENT_ID: 'test-google-client-id',
+  GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
 };
 
 describe('server entrypoint', () => {

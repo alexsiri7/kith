@@ -41,6 +41,8 @@ export default defineRailway(() => {
       ANTHROPIC_API_KEY: preserve(),
       SESSION_SECRET: preserve(),
       SENTRY_DSN: preserve(),
+      GOOGLE_CLIENT_ID: preserve(),
+      GOOGLE_CLIENT_SECRET: preserve(),
     },
   });
 

@@ -22,16 +22,27 @@ The first `apply` creates the project, the service, the database and the custom 
 
 ## Variables
 
-| Variable            | Where the value lives                                         |
-| ------------------- | ------------------------------------------------------------- |
-| `PORT`              | `railway.ts` (`3000`, the port the custom domain routes to).  |
-| `APP_ORIGIN`        | `railway.ts` (`https://kith.interstellarai.net`).             |
-| `DATABASE_URL`      | `railway.ts`, as a reference to `kith-db`'s `DATABASE_URL`.   |
-| `ANTHROPIC_API_KEY` | Railway dashboard only.                                       |
-| `SESSION_SECRET`    | Railway dashboard only. Generate with `openssl rand -hex 32`. |
-| `SENTRY_DSN`        | Railway dashboard only; may be left empty.                    |
+| Variable               | Where the value lives                                          |
+| ---------------------- | -------------------------------------------------------------- |
+| `PORT`                 | `railway.ts` (`3000`, the port the custom domain routes to).   |
+| `APP_ORIGIN`           | `railway.ts` (`https://kith.interstellarai.net`).              |
+| `DATABASE_URL`         | `railway.ts`, as a reference to `kith-db`'s `DATABASE_URL`.    |
+| `ANTHROPIC_API_KEY`    | Railway dashboard only.                                        |
+| `SESSION_SECRET`       | Railway dashboard only. Generate with `openssl rand -hex 32`.  |
+| `SENTRY_DSN`           | Railway dashboard only; may be left empty.                     |
+| `GOOGLE_CLIENT_ID`     | Railway dashboard only. See [Google sign-in](#google-sign-in). |
+| `GOOGLE_CLIENT_SECRET` | Railway dashboard only. See [Google sign-in](#google-sign-in). |
 
 Secrets are declared with `preserve()`, so `apply` keeps whatever value the dashboard holds and their values never enter the repository. When you add a variable in the dashboard, add its `preserve()` line to `railway.ts` too. The server refuses to start, listing every problem, while any required variable is missing or invalid (see the README's [Server](../README.md#server) section).
+
+## Google sign-in
+
+Players sign in with an OAuth client in the Google Cloud console (**APIs & Services → Credentials**), of type **Web application**, with:
+
+- Authorized JavaScript origin: `https://kith.interstellarai.net`
+- Authorized redirect URI: `https://kith.interstellarai.net/auth/google/callback`
+
+Its consent screen needs only the `openid`, `email` and `profile` scopes. Put the client's id and secret in `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. If `APP_ORIGIN` ever changes, add the new origin and redirect URI to the client first, or sign-in fails with Google's `redirect_uri_mismatch`.
 
 ## DNS
 

@@ -44,6 +44,7 @@ describe('Railway config', () => {
       'ANTHROPIC_API_KEY',
       'SESSION_SECRET',
       'SENTRY_DSN',
+      'GOOGLE_CLIENT_SECRET',
     ]) {
       expect(env[secret], secret).toBe(preserved);
     }

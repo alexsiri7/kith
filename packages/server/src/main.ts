@@ -5,7 +5,9 @@ import '@kith/content';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { loadConfig } from './config.js';
+import { googleProvider } from './google.js';
 import { buildServer } from './index.js';
+import { PgUserStore } from './users.js';
 
 const config = loadConfig(process.env);
 const pool = new pg.Pool({
@@ -14,6 +16,12 @@ const pool = new pg.Pool({
 });
 const app = buildServer({
   checkDatabase: () => pool.query('SELECT 1'),
+  auth: {
+    appOrigin: config.appOrigin,
+    sessionSecret: config.sessionSecret,
+    google: googleProvider(config.google),
+    users: new PgUserStore(pool),
+  },
   // Same relative paths from src/ (tests) and dist/ (image).
   gameDir: fileURLToPath(new URL('../../../prototype/dist/', import.meta.url)),
   clientDir: fileURLToPath(new URL('../../client/dist/', import.meta.url)),

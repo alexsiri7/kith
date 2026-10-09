@@ -4,11 +4,16 @@ import Fastify, {
   type FastifyInstance,
   type FastifyServerOptions,
 } from 'fastify';
+import { auth, type AuthOptions } from './auth.js';
 import { clientMountPath } from './client-mount.js';
 
 export interface ServerOptions {
   checkDatabase: () => Promise<unknown>;
-  /** The built v2.2 prototype, served at `/`. */
+  auth: AuthOptions;
+  /**
+   * The built v2.2 prototype. `/` serves its game to signed-in players and
+   * its welcome page to everyone else.
+   */
   gameDir?: string;
   /** The new client's build, served under `clientMountPath`. */
   clientDir?: string;
@@ -25,6 +30,7 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   app.addHook('onRequest', async (request, reply) => {
     reply.header('x-request-id', request.id);
   });
+  app.register(auth, options.auth);
 
   app.get('/healthz', () => ({ status: 'ok' }));
   app.get('/readyz', async (request, reply) => {
@@ -41,9 +47,12 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   if (options.gameDir !== undefined) {
     app.register(fastifyStatic, {
       root: options.gameDir,
-      index: 'kith.html',
+      serve: false,
       ...uncached,
     });
+    app.get('/', (request, reply) =>
+      reply.sendFile(request.userId === null ? 'welcome.html' : 'kith.html'),
+    );
   }
   if (options.clientDir !== undefined) {
     app.register(fastifyStatic, {

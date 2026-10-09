@@ -1,3 +1,4 @@
+import { googleAuthorizationUrl, googleTokenUrl } from './google.js';
 import { resolvePort } from './port.js';
 
 export interface Config {
@@ -7,6 +8,12 @@ export interface Config {
   sentryDsn: string | undefined;
   appOrigin: string;
   sessionSecret: string;
+  google: {
+    clientId: string;
+    clientSecret: string;
+    authorizationUrl: string;
+    tokenUrl: string;
+  };
 }
 
 const minSessionSecretLength = 32;
@@ -23,8 +30,8 @@ function hasProtocol(url: URL | undefined, protocols: string[]): boolean {
   return url !== undefined && protocols.includes(url.protocol);
 }
 
-// Error messages never include DATABASE_URL, ANTHROPIC_API_KEY or
-// SESSION_SECRET values: startup errors end up in deploy logs.
+// Error messages never include DATABASE_URL, ANTHROPIC_API_KEY,
+// SESSION_SECRET or GOOGLE_CLIENT_SECRET values: startup errors end up in deploy logs.
 export function loadConfig(env: Record<string, string | undefined>): Config {
   const problems: string[] = [];
   const required = (name: string): string => {
@@ -78,6 +85,22 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     );
   }
 
+  // Only the end-to-end tests point the URLs at a fake Google.
+  const optionalUrl = (name: string, fallback: string): string => {
+    const value = env[name];
+    if (value === undefined || value === '') return fallback;
+    if (!hasProtocol(parseUrl(value), ['http:', 'https:'])) {
+      problems.push(`${name} must be a URL`);
+    }
+    return value;
+  };
+  const google = {
+    clientId: required('GOOGLE_CLIENT_ID'),
+    clientSecret: required('GOOGLE_CLIENT_SECRET'),
+    authorizationUrl: optionalUrl('GOOGLE_AUTH_URL', googleAuthorizationUrl),
+    tokenUrl: optionalUrl('GOOGLE_TOKEN_URL', googleTokenUrl),
+  };
+
   if (problems.length > 0) {
     throw new Error(
       `Invalid configuration:\n${problems.map((p) => `- ${p}`).join('\n')}`,
@@ -90,5 +113,6 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     sentryDsn,
     appOrigin,
     sessionSecret,
+    google,
   };
 }

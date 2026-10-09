@@ -7,6 +7,8 @@ const validEnv = {
   ANTHROPIC_API_KEY: 'test-anthropic-key',
   APP_ORIGIN: 'https://kith.example',
   SESSION_SECRET: sessionSecret,
+  GOOGLE_CLIENT_ID: 'test-google-client-id',
+  GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
 };
 
 function problemsFor(env: Record<string, string | undefined>): string {
@@ -33,8 +35,35 @@ describe('loadConfig', () => {
       sentryDsn: 'https://key@sentry.example/1',
       appOrigin: 'https://kith.example',
       sessionSecret,
+      google: {
+        clientId: 'test-google-client-id',
+        clientSecret: 'test-google-client-secret',
+        authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+        tokenUrl: 'https://oauth2.googleapis.com/token',
+      },
     });
   });
+
+  it('lets the Google endpoints be replaced', () => {
+    expect(
+      loadConfig({
+        ...validEnv,
+        GOOGLE_AUTH_URL: 'http://localhost:3101/auth',
+        GOOGLE_TOKEN_URL: 'http://localhost:3101/token',
+      }).google,
+    ).toMatchObject({
+      authorizationUrl: 'http://localhost:3101/auth',
+      tokenUrl: 'http://localhost:3101/token',
+    });
+  });
+
+  for (const name of ['GOOGLE_AUTH_URL', 'GOOGLE_TOKEN_URL']) {
+    it(`rejects a ${name} that is not a URL`, () => {
+      expect(problemsFor({ ...validEnv, [name]: 'not a url' })).toContain(
+        `${name} must be a URL`,
+      );
+    });
+  }
 
   it('defaults PORT to 3000 and treats SENTRY_DSN as optional', () => {
     expect(loadConfig(validEnv)).toMatchObject({
@@ -58,6 +87,8 @@ describe('loadConfig', () => {
     'ANTHROPIC_API_KEY',
     'APP_ORIGIN',
     'SESSION_SECRET',
+    'GOOGLE_CLIENT_ID',
+    'GOOGLE_CLIENT_SECRET',
   ]) {
     it(`requires ${name}`, () => {
       expect(problemsFor({ ...validEnv, [name]: undefined })).toContain(
@@ -116,6 +147,7 @@ describe('loadConfig', () => {
     expect(message).toContain('ANTHROPIC_API_KEY must be set');
     expect(message).toContain('APP_ORIGIN must be an origin');
     expect(message).toContain('SESSION_SECRET must be set');
+    expect(message).toContain('GOOGLE_CLIENT_ID must be set');
   });
 
   it('never echoes secret values', () => {
@@ -124,9 +156,11 @@ describe('loadConfig', () => {
       DATABASE_URL: 'mysql://kith:db-password@localhost/kith',
       SESSION_SECRET: 'short-session-secret',
       APP_ORIGIN: 'bad',
+      GOOGLE_TOKEN_URL: 'bad',
     });
     expect(message).not.toContain('db-password');
     expect(message).not.toContain('short-session-secret');
     expect(message).not.toContain('test-anthropic-key');
+    expect(message).not.toContain('test-google-client-secret');
   });
 });
