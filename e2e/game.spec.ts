@@ -51,6 +51,8 @@ async function expectNoHorizontalScroll(page: Page): Promise<void> {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
+const day = 24 * 60 * 60 * 1000;
+
 const viewports = [
   { name: 'phone', width: 375, height: 812, touch: true },
   { name: 'desktop', width: 1280, height: 800, touch: false },
@@ -67,8 +69,56 @@ for (const viewport of viewports) {
     const press = (target: Locator) =>
       viewport.touch ? target.tap() : target.click();
 
-    test('starts a world and draws an egg', async ({ page }) => {
+    // The fake Google (e2e/fake-google.ts) approves the sign-in at once.
+    async function signIn(page: Page): Promise<void> {
       await page.goto('/');
+      await press(page.getByRole('button', { name: 'Sign in with Google' }));
+      await expect(page.locator('#intro')).toBeVisible();
+    }
+
+    test('signs in with Google, stays signed in and signs out', async ({
+      page,
+      context,
+    }) => {
+      await page.goto('/');
+      const welcome = page.locator('#welcome');
+      await expect(
+        welcome.getByRole('heading', { name: 'Welcome to Kith' }),
+      ).toBeVisible();
+      await expect(page.locator('#world')).toHaveCount(0);
+      await expectNoHorizontalScroll(page);
+
+      await press(welcome.getByRole('button', { name: 'Sign in with Google' }));
+      await expect(page.locator('#intro')).toBeVisible();
+      await expect(page).toHaveURL('/');
+      const session = (await context.cookies()).find(
+        (cookie) => cookie.name === 'kith_session',
+      );
+      expect(session).toMatchObject({
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Lax',
+      });
+      expect(session!.expires * 1000 - Date.now()).toBeGreaterThan(89 * day);
+
+      await page.reload();
+      await expect(page.locator('#intro')).toBeVisible();
+      await page.locator('#pname').fill('Alex');
+      await press(page.getByRole('button', { name: 'Place the egg' }));
+      await expect(page.locator('#intro')).toBeHidden();
+
+      await press(page.getByRole('button', { name: 'Sign out' }));
+      await expect(welcome).toBeVisible();
+      await expect(page.locator('#world')).toHaveCount(0);
+      expect(
+        (await context.cookies()).some(
+          (cookie) => cookie.name === 'kith_session',
+        ),
+      ).toBe(false);
+    });
+
+    test('starts a world and draws an egg', async ({ page }) => {
+      await signIn(page);
 
       const intro = page.locator('#intro');
       await expect(intro).toBeVisible();
@@ -110,7 +160,7 @@ for (const viewport of viewports) {
     });
 
     test('opens and closes every overlay', async ({ page }) => {
-      await page.goto('/');
+      await signIn(page);
       await page.locator('#pname').fill('Alex');
       await press(page.getByRole('button', { name: 'Place the egg' }));
       await expect(page.locator('#intro')).toBeHidden();

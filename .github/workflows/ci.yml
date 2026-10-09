@@ -36,29 +36,32 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm e2e
+      # While the database is still empty: the end-to-end tests migrate it too.
       - name: Migrate an empty database
         run: node packages/server/dist/migrate-main.js
         env:
           DATABASE_URL: postgres://kith:kith@localhost:5432/kith
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
 
   image:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - run: docker build -t kith-server .
-      - name: Serve /healthz, the game and the client from the image
+      - name: Serve /healthz, the welcome page and the client from the image
         run: |
           docker run -d --name kith-server -p 3000:3000 \
             -e DATABASE_URL=postgres://kith:kith@127.0.0.1:5432/kith \
             -e ANTHROPIC_API_KEY=ci-placeholder \
             -e APP_ORIGIN=http://localhost:3000 \
             -e SESSION_SECRET=ci-placeholder-session-secret-0123456789 \
+            -e GOOGLE_CLIENT_ID=ci-placeholder \
+            -e GOOGLE_CLIENT_SECRET=ci-placeholder \
             kith-server
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:3000/healthz; then
-              curl -fsS http://localhost:3000/ | grep -q 'Two eggs, left in your care' \
+              curl -fsS http://localhost:3000/ | grep -q 'Sign in with Google' \
                 && curl -fsS http://localhost:3000/next/ | grep -q 'src="/next/assets/' \
                 && exit 0
               break

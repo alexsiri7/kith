@@ -7,87 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sniglet:wght@400;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#dfe8dc;--surface:#f5f8f1;--ink:#1d2a24;--muted:#5d6e64;--line:#c3cfbf;--moss:#2f6b4f;--moss-ink:#f3f7ef;--pollen:#e8b53a;--warn:#c4533a;--bond:#b0527a;
-  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a16;--surface:#1b2621;--ink:#e3ebdd;--muted:#93a499;--line:#2f3d36;--moss:#6fbf93;--moss-ink:#0f1a14;--warn:#e27a5f;--bond:#e08aad}}
-:root[data-theme="dark"]{--bg:#121a16;--surface:#1b2621;--ink:#e3ebdd;--muted:#93a499;--line:#2f3d36;--moss:#6fbf93;--moss-ink:#0f1a14;--warn:#e27a5f;--bond:#e08aad}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-*,*::before,*::after{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:780px;margin:0 auto;padding:12px 14px 40px}
-header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 2px 10px}
-.mark{font-family:Sniglet,Nunito,system-ui,sans-serif;font-weight:800;font-size:34px;line-height:1;letter-spacing:.5px;color:var(--moss)}
-.who{flex:1;min-width:0}
-.who strong{font-family:Sniglet,Nunito,sans-serif;font-size:20px;font-weight:400;display:block;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.who span{font-size:13px;color:var(--muted);display:block}
-.purse{display:flex;align-items:center;gap:6px;font-weight:700;font-size:18px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px 4px 6px}
-.coin{display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--pollen);box-shadow:inset 0 0 0 3px #f6d57d;vertical-align:-3px}
-.stage{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#a9cfe0}
-canvas{display:block;width:100%;aspect-ratio:800/440;touch-action:none;cursor:pointer}
-.status{position:absolute;left:10px;bottom:8px;right:10px;display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);pointer-events:none}
-#talk{display:flex;gap:8px;margin:10px 0 4px}
-input[type=text]{flex:1;min-width:0;font:inherit;padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
-input[type=text]:focus-visible,button:focus-visible{outline:3px solid var(--pollen);outline-offset:2px}
-button{font:inherit;font-weight:700;border:0;border-radius:999px;padding:9px 16px;background:var(--moss);color:var(--moss-ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-button.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
-button.danger{color:var(--warn)}
-button:disabled{opacity:.4;cursor:not-allowed}
-#chat{min-height:24px;margin:2px 4px 12px}
-.roster{display:flex;gap:6px;overflow-x:auto;margin:0 0 8px;scrollbar-width:none}
-.roster button{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line);padding:5px 12px 5px 8px;font-size:14px;white-space:nowrap}
-.roster button[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--moss)}
-.roster .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
-.roster .st{color:var(--muted);font-weight:600;font-size:12px}
-.why{margin:8px 4px 0;font-size:14px;color:var(--muted);min-height:21px}
-.why strong{color:var(--ink)}
-.brain{display:grid;gap:6px}
-.opt{display:grid;grid-template-columns:130px 1fr 44px;gap:8px;align-items:center;font-size:14px}
-.opt i{display:block;height:10px;border-radius:5px;background:var(--line);overflow:hidden}
-.opt b{display:block;height:100%;background:var(--muted)}
-.opt.win b{background:var(--moss)} .opt.win span:first-child{font-weight:700}
-.habit{font-size:14px;margin:3px 0}
-#chat p{margin:2px 0;font-size:15px}
-#chat p strong{color:var(--bond);margin-right:4px}
-#chat p.me strong{color:var(--moss)}
-.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:12px;scrollbar-width:none}
-.tabs button{background:none;color:var(--muted);border-radius:10px 10px 0 0;padding:8px 12px;font-weight:700}
-.tabs button[aria-selected=true]{color:var(--ink);box-shadow:inset 0 -3px 0 var(--moss)}
-#panel{min-height:180px}
-h3{font-family:Sniglet,Nunito,sans-serif;font-weight:400;font-size:17px;margin:0 0 6px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-@media (max-width:560px){.grid2{grid-template-columns:1fr}}
-.bar{display:grid;grid-template-columns:84px 1fr;align-items:center;gap:8px;margin:5px 0;font-size:14px}
-.bar i,.word i{display:block;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
-.bar b,.word b{display:block;height:100%;background:var(--muted);border-radius:4px}
-.bar.warn b{background:var(--warn)}.bar.good b{background:var(--moss)}.bar.good.warn b{background:var(--warn)}.bar.bond b{background:var(--bond)}
-.row{display:flex;gap:8px;margin:10px 0}.row.wrap{flex-wrap:wrap}
-.hint{font-size:14px;color:var(--muted);max-width:60ch}
-.muted{color:var(--muted);font-size:14px}
-.shop{display:grid;gap:8px}
-.sku{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
-.sku strong{display:block}
-.fc{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.day{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;gap:2px}
-.day.alert{border-color:var(--warn)}.day.alert span:first-of-type{color:var(--warn);font-weight:700}
-.words{display:grid;gap:6px}
-.word{display:grid;grid-template-columns:110px 80px 1fr;align-items:center;gap:8px}
-.word.faint strong{opacity:.5}
-.word b{background:var(--moss)}
-.beliefs{display:grid;gap:8px}.belief{display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px 10px}.belief .ico{font-size:22px;text-align:center}.belief strong{display:block;font-weight:700}.belief .muted{display:block}.belief i{display:block;height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:4px}.belief b{display:block;height:100%;background:var(--bond)}.belief.neg b{background:var(--warn)}
-#toast{max-width:min(90vw,520px)}
-.mem{list-style:none;padding:0;margin:0;display:grid;gap:10px}
-.mem li{display:grid;gap:0;border-left:3px solid var(--bond);padding-left:10px}
-.overlay{position:fixed;inset:0;background:rgba(10,18,14,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}
-.overlay[hidden],#toast[hidden]{display:none}
-.card{background:var(--surface);color:var(--ink);border-radius:22px;padding:22px;max-width:420px;width:100%;max-height:85vh;overflow:auto}
-.card h2{font-family:Sniglet,Nunito,sans-serif;font-weight:400;font-size:26px;margin:0 0 8px;line-height:1.15}
-.card label{display:block;font-weight:700;font-size:14px;margin:12px 0 4px}
-.card input{width:100%}
-.card ul,.card ol{padding-left:20px}
-.err{color:var(--warn);font-size:13px;margin:4px 0 0}
-#toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;font-weight:700;font-size:14px;z-index:6;max-width:90vw}
-footer{margin-top:24px;font-size:12px;color:var(--muted)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/*STYLE*/
 </style>
 </head>
 <body>
@@ -109,7 +29,7 @@ footer{margin-top:24px;font-size:12px;color:var(--muted)}
     <button data-tab="care" role="tab">Care</button><button data-tab="shop" role="tab">Shop</button><button data-tab="weather" role="tab">Weather</button><button data-tab="words" role="tab">Words</button><button data-tab="mind" role="tab">Mind</button><button data-tab="brain" role="tab">Brain</button><button data-tab="memories" role="tab">Memories</button><button data-tab="time" role="tab">Time</button>
   </nav>
   <section id="panel"></section>
-  <footer><span id="llm"></span>. V1: one creature, two weeks of life.</footer>
+  <footer><span><span id="llm"></span>. V1: one creature, two weeks of life.</span><form method="post" action="/auth/sign-out"><button type="submit" class="ghost">Sign out</button></form></footer>
 </main>
 <div class="overlay" id="intro" hidden><form class="card" id="start" autocomplete="off">
   <h2>Two eggs, left in your care</h2>

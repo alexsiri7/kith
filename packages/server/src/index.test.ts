@@ -4,7 +4,13 @@ import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { clientMountPath } from './client-mount.js';
+import type { IdentityProvider } from './google.js';
 import { buildServer, type ServerOptions } from './index.js';
+
+const unusedGoogle: IdentityProvider = {
+  authorizationUrl: () => 'https://google.test/auth',
+  identify: () => Promise.reject(new Error('not signing in here')),
+};
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -22,6 +28,12 @@ describe('server', () => {
     app = buildServer({
       checkDatabase: async () => undefined,
       logger: false,
+      auth: {
+        appOrigin: 'https://kith.example',
+        sessionSecret: 's'.repeat(32),
+        google: unusedGoogle,
+        users: { signIn: () => Promise.reject(new Error('no users here')) },
+      },
       ...options,
     });
     return app;
@@ -86,19 +98,19 @@ describe('server', () => {
     return dir;
   }
 
-  it('serves the game at / and the client at its mount', async () => {
+  it('serves the welcome page at / and the client at its mount', async () => {
     const server = build({
-      gameDir: await staticDir('kith.html', '<p>kith-game</p>'),
+      gameDir: await staticDir('welcome.html', '<p>kith-welcome</p>'),
       clientDir: await staticDir('index.html', '<p>kith-client</p>'),
     });
 
-    const game = await server.inject({ method: 'GET', url: '/' });
-    expect(game.statusCode).toBe(200);
-    expect(game.headers['content-type']).toMatch(/^text\/html/);
-    expect(game.body).toContain('kith-game');
-    expect(game.headers).not.toHaveProperty('cache-control');
-    expect(game.headers).not.toHaveProperty('last-modified');
-    expect(game.headers).not.toHaveProperty('etag');
+    const welcome = await server.inject({ method: 'GET', url: '/' });
+    expect(welcome.statusCode).toBe(200);
+    expect(welcome.headers['content-type']).toMatch(/^text\/html/);
+    expect(welcome.body).toContain('kith-welcome');
+    expect(welcome.headers).not.toHaveProperty('cache-control');
+    expect(welcome.headers).not.toHaveProperty('last-modified');
+    expect(welcome.headers).not.toHaveProperty('etag');
 
     const client = await server.inject({
       method: 'GET',
@@ -125,8 +137,8 @@ describe('server', () => {
 
   it('serves no files without builds', async () => {
     const server = build();
-    const game = await server.inject({ method: 'GET', url: '/' });
-    expect(game.statusCode).toBe(404);
+    const welcome = await server.inject({ method: 'GET', url: '/' });
+    expect(welcome.statusCode).toBe(404);
     const client = await server.inject({
       method: 'GET',
       url: `${clientMountPath}/`,
