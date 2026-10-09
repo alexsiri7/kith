@@ -83,4 +83,18 @@ describe.skipIf(databaseUrl === undefined)('PgUserStore', () => {
     });
     expect(first).not.toBe(second);
   });
+
+  it("signs in a new Google account that reuses an earlier account's email", async () => {
+    const first = await users.signIn({
+      subject: 'google-sub-4',
+      email: 'reused@kith.example',
+      displayName: 'Former owner',
+    });
+    const second = await users.signIn({
+      subject: 'google-sub-5',
+      email: 'reused@kith.example',
+      displayName: 'New owner',
+    });
+    expect(second).not.toBe(first);
+  });
 });
