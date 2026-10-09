@@ -255,6 +255,15 @@ describe('Google sign-in', () => {
     expect(users.users.size).toBe(0);
   });
 
+  it('reports a failure to save the user as a server error', async () => {
+    vi.spyOn(users, 'signIn').mockRejectedValue(new Error('database down'));
+    const { location, oauth } = await startSignIn();
+    const state = location.searchParams.get('state');
+    const res = await callback(`code=good-code&state=${state}`, oauth);
+    expect(res.statusCode).toBe(500);
+    expect(cookieFrom(res, sessionCookie)).toBeUndefined();
+  });
+
   it('shows signed-out visitors the welcome card and players the game', async () => {
     const signedOut = await app.inject({ method: 'GET', url: '/' });
     expect(signedOut.statusCode).toBe(200);

@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import fastifyCookie from '@fastify/cookie';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
-import type { IdentityProvider } from './google.js';
+import type { GoogleIdentity, IdentityProvider } from './google.js';
 import type { UserStore } from './users.js';
 
 declare module 'fastify' {
@@ -141,16 +141,18 @@ export const auth = fp<AuthOptions>(async (app, options) => {
         request.log.warn('Google sign-in callback without a matching state');
         return reply.redirect('/', 303);
       }
+      let identity: GoogleIdentity;
       try {
-        const identity = await options.google.identify({
+        identity = await options.google.identify({
           code,
           redirectUri,
           codeVerifier,
         });
-        issueSession(reply, await options.users.signIn(identity));
       } catch (err) {
         request.log.warn({ err }, 'Google sign-in failed');
+        return reply.redirect('/', 303);
       }
+      issueSession(reply, await options.users.signIn(identity));
       return reply.redirect('/', 303);
     },
   );
