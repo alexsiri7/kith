@@ -152,7 +152,14 @@ export const auth = fp<AuthOptions>(async (app, options) => {
         request.log.warn({ err }, 'Google sign-in failed');
         return reply.redirect('/', 303);
       }
-      issueSession(reply, await options.users.signIn(identity));
+      let userId: string;
+      try {
+        userId = await options.users.signIn(identity);
+      } catch (err) {
+        request.log.error({ err }, 'Failed to save the signed-in user');
+        return reply.code(500).send({ error: 'Internal Server Error' });
+      }
+      issueSession(reply, userId);
       return reply.redirect('/', 303);
     },
   );

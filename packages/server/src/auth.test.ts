@@ -256,11 +256,14 @@ describe('Google sign-in', () => {
   });
 
   it('reports a failure to save the user as a server error', async () => {
-    vi.spyOn(users, 'signIn').mockRejectedValue(new Error('database down'));
+    vi.spyOn(users, 'signIn').mockRejectedValue(
+      new Error('database down: password=supersecret'),
+    );
     const { location, oauth } = await startSignIn();
     const state = location.searchParams.get('state');
     const res = await callback(`code=good-code&state=${state}`, oauth);
     expect(res.statusCode).toBe(500);
+    expect(res.body).not.toContain('supersecret');
     expect(cookieFrom(res, sessionCookie)).toBeUndefined();
   });
 
