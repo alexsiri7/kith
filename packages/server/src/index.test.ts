@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
+import { clientMountPath } from './client-mount.js';
 import { buildServer, type ServerOptions } from './index.js';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -85,7 +86,7 @@ describe('server', () => {
     return dir;
   }
 
-  it('serves the game at / and the client at /next/', async () => {
+  it('serves the game at / and the client at its mount', async () => {
     const server = build({
       gameDir: await staticDir('kith.html', '<p>kith-game</p>'),
       clientDir: await staticDir('index.html', '<p>kith-client</p>'),
@@ -99,7 +100,10 @@ describe('server', () => {
     expect(game.headers).not.toHaveProperty('last-modified');
     expect(game.headers).not.toHaveProperty('etag');
 
-    const client = await server.inject({ method: 'GET', url: '/next/' });
+    const client = await server.inject({
+      method: 'GET',
+      url: `${clientMountPath}/`,
+    });
     expect(client.statusCode).toBe(200);
     expect(client.headers['content-type']).toMatch(/^text\/html/);
     expect(client.body).toContain('kith-client');
@@ -111,19 +115,22 @@ describe('server', () => {
     expect(health.json()).toEqual({ status: 'ok' });
   });
 
-  it('redirects /next to the client', async () => {
+  it('redirects the bare mount path to the client', async () => {
     const res = await build({
       clientDir: await staticDir('index.html', '<p>kith-client</p>'),
-    }).inject({ method: 'GET', url: '/next' });
+    }).inject({ method: 'GET', url: clientMountPath });
     expect(res.statusCode).toBe(301);
-    expect(res.headers.location).toBe('/next/');
+    expect(res.headers.location).toBe(`${clientMountPath}/`);
   });
 
   it('serves no files without builds', async () => {
     const server = build();
     const game = await server.inject({ method: 'GET', url: '/' });
     expect(game.statusCode).toBe(404);
-    const client = await server.inject({ method: 'GET', url: '/next/' });
+    const client = await server.inject({
+      method: 'GET',
+      url: `${clientMountPath}/`,
+    });
     expect(client.statusCode).toBe(404);
   });
 });

@@ -4,12 +4,13 @@ import Fastify, {
   type FastifyInstance,
   type FastifyServerOptions,
 } from 'fastify';
+import { clientMountPath } from './client-mount.js';
 
 export interface ServerOptions {
   checkDatabase: () => Promise<unknown>;
   /** The built v2.2 prototype, served at `/`. */
   gameDir?: string;
-  /** The new client's build, served at `/next/`. */
+  /** The new client's build, served under `clientMountPath`. */
   clientDir?: string;
   logger?: FastifyServerOptions['logger'];
 }
@@ -47,7 +48,7 @@ export function buildServer(options: ServerOptions): FastifyInstance {
   if (options.clientDir !== undefined) {
     app.register(fastifyStatic, {
       root: options.clientDir,
-      prefix: '/next',
+      prefix: clientMountPath,
       redirect: true,
       // Nothing sends files by hand, and a second reply.sendFile decoration
       // would clash with the game's.
