@@ -14,6 +14,7 @@ WORKDIR /app
 COPY --from=build /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages ./packages
+COPY --from=build /app/prototype/dist ./prototype/dist
 USER node
 EXPOSE 3000
 CMD ["node", "packages/server/dist/main.js"]

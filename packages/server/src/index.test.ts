@@ -9,13 +9,12 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 describe('server', () => {
   let app: FastifyInstance | undefined;
-  let clientDir: string | undefined;
+  const dirs: string[] = [];
 
   afterEach(async () => {
     await app?.close();
     app = undefined;
-    if (clientDir !== undefined) await rm(clientDir, { recursive: true });
-    clientDir = undefined;
+    for (const dir of dirs.splice(0)) await rm(dir, { recursive: true });
   });
 
   function build(options: Partial<ServerOptions> = {}): FastifyInstance {
@@ -79,25 +78,52 @@ describe('server', () => {
     expect(entries.some((entry) => entry.reqId === 'test-id')).toBe(true);
   });
 
-  it('serves the client build when given one', async () => {
-    clientDir = await mkdtemp(join(tmpdir(), 'kith-client-'));
-    await writeFile(join(clientDir, 'index.html'), '<p>kith-client</p>');
-    const server = build({ clientDir });
+  async function staticDir(file: string, body: string): Promise<string> {
+    const dir = await mkdtemp(join(tmpdir(), 'kith-static-'));
+    dirs.push(dir);
+    await writeFile(join(dir, file), body);
+    return dir;
+  }
 
-    const page = await server.inject({ method: 'GET', url: '/' });
-    expect(page.statusCode).toBe(200);
-    expect(page.headers['content-type']).toMatch(/^text\/html/);
-    expect(page.body).toContain('kith-client');
-    expect(page.headers).not.toHaveProperty('cache-control');
-    expect(page.headers).not.toHaveProperty('last-modified');
-    expect(page.headers).not.toHaveProperty('etag');
+  it('serves the game at / and the client at /next/', async () => {
+    const server = build({
+      gameDir: await staticDir('kith.html', '<p>kith-game</p>'),
+      clientDir: await staticDir('index.html', '<p>kith-client</p>'),
+    });
+
+    const game = await server.inject({ method: 'GET', url: '/' });
+    expect(game.statusCode).toBe(200);
+    expect(game.headers['content-type']).toMatch(/^text\/html/);
+    expect(game.body).toContain('kith-game');
+    expect(game.headers).not.toHaveProperty('cache-control');
+    expect(game.headers).not.toHaveProperty('last-modified');
+    expect(game.headers).not.toHaveProperty('etag');
+
+    const client = await server.inject({ method: 'GET', url: '/next/' });
+    expect(client.statusCode).toBe(200);
+    expect(client.headers['content-type']).toMatch(/^text\/html/);
+    expect(client.body).toContain('kith-client');
+    expect(client.headers).not.toHaveProperty('cache-control');
+    expect(client.headers).not.toHaveProperty('last-modified');
+    expect(client.headers).not.toHaveProperty('etag');
 
     const health = await server.inject({ method: 'GET', url: '/healthz' });
     expect(health.json()).toEqual({ status: 'ok' });
   });
 
-  it('serves no files without a client build', async () => {
-    const res = await build().inject({ method: 'GET', url: '/' });
-    expect(res.statusCode).toBe(404);
+  it('redirects /next to the client', async () => {
+    const res = await build({
+      clientDir: await staticDir('index.html', '<p>kith-client</p>'),
+    }).inject({ method: 'GET', url: '/next' });
+    expect(res.statusCode).toBe(301);
+    expect(res.headers.location).toBe('/next/');
+  });
+
+  it('serves no files without builds', async () => {
+    const server = build();
+    const game = await server.inject({ method: 'GET', url: '/' });
+    expect(game.statusCode).toBe(404);
+    const client = await server.inject({ method: 'GET', url: '/next/' });
+    expect(client.statusCode).toBe(404);
   });
 });

@@ -7,6 +7,9 @@ import Fastify, {
 
 export interface ServerOptions {
   checkDatabase: () => Promise<unknown>;
+  /** The built v2.2 prototype, served at `/`. */
+  gameDir?: string;
+  /** The new client's build, served at `/next/`. */
   clientDir?: string;
   logger?: FastifyServerOptions['logger'];
 }
@@ -33,12 +36,23 @@ export function buildServer(options: ServerOptions): FastifyInstance {
     }
   });
 
+  const uncached = { cacheControl: false, lastModified: false, etag: false };
+  if (options.gameDir !== undefined) {
+    app.register(fastifyStatic, {
+      root: options.gameDir,
+      index: 'kith.html',
+      ...uncached,
+    });
+  }
   if (options.clientDir !== undefined) {
     app.register(fastifyStatic, {
       root: options.clientDir,
-      cacheControl: false,
-      lastModified: false,
-      etag: false,
+      prefix: '/next',
+      redirect: true,
+      // Nothing sends files by hand, and a second reply.sendFile decoration
+      // would clash with the game's.
+      decorateReply: false,
+      ...uncached,
     });
   }
   return app;
