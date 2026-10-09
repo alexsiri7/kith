@@ -12,7 +12,7 @@ A pnpm-workspace TypeScript monorepo.
 | `packages/server`     | Node server (Fastify) deployed to Railway. `GET /healthz` reports liveness, `GET /readyz` database readiness; serves the client build. See [Server](#server). |
 | `packages/cortex`     | Claude-facing service code (prompt templates, schemas, providers), used by the server.                                                                        |
 | `packages/legacy-sim` | The prototype simulation ported to TypeScript (not yet ported).                                                                                               |
-| `prototype/`          | Untouched reference implementation of the original prototype (to be unpacked from `kith-prototype.zip`).                                                      |
+| `prototype/`          | Untouched reference implementation of the original prototype.                                                                                                 |
 | `requirements/`       | Product requirements.                                                                                                                                         |
 | `tests/`              | Repository-level tests (e.g. the determinism lint rule).                                                                                                      |
 
