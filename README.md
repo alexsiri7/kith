@@ -31,7 +31,9 @@ pnpm build       # build every package
 pnpm format      # apply Prettier
 ```
 
-CI (`.github/workflows/ci.yml`) runs install, typecheck, lint, test and build on every pull request and on `main`, and builds the Docker image and checks that it serves `/healthz` and the client.
+The Postgres integration tests (`packages/server/src/world-store.test.ts`) run only when `TEST_DATABASE_URL` points at a database they may create and drop schemas in, e.g. `TEST_DATABASE_URL=postgres://kith:kith@localhost:5432/kith pnpm test`; each run works in a fresh schema of its own. Without it they are skipped locally and fail in CI.
+
+CI (`.github/workflows/ci.yml`) runs install, typecheck, lint, test (against a Postgres service container) and build on every pull request and on `main`, migrates an empty database with the built server, and builds the Docker image and checks that it serves `/healthz` and the client.
 
 Production runs on Railway at <https://kith.interstellarai.net>, declared in `.railway/railway.ts`; deploys, variables, DNS, backups and restores are described in [Operations](docs/operations.md).
 
@@ -51,6 +53,21 @@ Production runs on Railway at <https://kith.interstellarai.net>, declared in `.r
 `GET /healthz` answers as long as the process is up; `GET /readyz` answers 200 only while Postgres responds to `SELECT 1` and 503 otherwise (Railway's deploy healthcheck, see [Operations](docs/operations.md)). Logs are JSON lines; each request carries an `x-request-id` (taken from the incoming header or generated) that appears as `reqId` in its log lines and is echoed in the response.
 
 The server also serves the client's Vite build (`packages/client/dist`) as static files. One Railway service therefore serves both the app and the API from one origin: one deploy, no CORS or cross-site cookies, and the client always ships with the server version that runs the same engine. A separate static deploy was rejected for adding a second pipeline and allowing client/server version skew for no benefit at this stage.
+
+### Persistence
+
+Worlds are stored in Postgres. `packages/server/src/migrations.ts` holds the schema as an ordered list of SQL migrations; `node packages/server/dist/migrate-main.js` (which needs only `DATABASE_URL`) applies the ones not yet recorded in `schema_migrations` and runs as Railway's pre-deploy command, so the schema is current before a new version takes traffic.
+
+| Table              | Holds                                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `users`            | Players.                                                                                                       |
+| `worlds`           | One row per world: owner, name, current `version`, sim time, seed, last-seen time and scheduler lease.         |
+| `world_snapshots`  | The full world (the engine's save JSON) at every version.                                                      |
+| `world_events`     | Append-only game events, numbered per world. Nothing prunes them yet (see below).                              |
+| `moments`/`dreams` | The memory book: every moment and dream a world has held, kept forever even after the world itself drops them. |
+| `commands`         | Every player command received, numbered per world, for replay and debugging.                                   |
+
+`PgWorldStore` (`packages/server/src/world-store.ts`) implements the `WorldStore` interface. `save(worldId, baseVersion, world, events)` writes the next version only if the stored version is still `baseVersion` and throws `WorldVersionConflict` otherwise, so two writers never silently overwrite each other. Loaded snapshots go through the engine's save migrations and validation. `pruneEvents(now)` implements the event retention — routine events older than 30 days are deleted — but nothing calls it yet: until a scheduler does, `world_events` grows without bound.
 
 Build and run the image locally:
 

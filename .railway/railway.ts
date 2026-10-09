@@ -27,6 +27,7 @@ export default defineRailway(() => {
     source: github('alexsiri7/kith', { branch: 'main', checkSuites: true }),
     build: { builder: 'DOCKERFILE', dockerfilePath: 'Dockerfile' },
     start: 'node packages/server/dist/main.js',
+    preDeploy: 'node packages/server/dist/migrate-main.js',
     // A deploy that never reports ready is not promoted; the previous one keeps serving.
     healthcheck: '/readyz',
     healthcheckTimeout: 60,
