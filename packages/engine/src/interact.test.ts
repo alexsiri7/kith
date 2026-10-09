@@ -3,7 +3,6 @@ import { z } from 'zod';
 import type {
   Actor,
   AffordanceDef,
-  ContinuousEffect,
   CustomEffect,
   Effect,
   OutcomeDef,
@@ -95,6 +94,7 @@ function setup(
   const robot: EntityType = { ...lamp, id: 'robot', category: 'robot' };
   const registry = createRegistry({
     types: [kith, lamp, thing, robot],
+    needs: ['hunger', 'fear', 'thirst'],
     meanings: ['light', 'dark'],
     verbs: ['use', 'eat'],
     customEffects,
@@ -122,7 +122,10 @@ function useWith(
   customEffects?: Record<string, CustomEffect>,
 ) {
   const { registry, world } = setup(
-    { outcomes: [{ effects, valence: 0.5 }] },
+    {
+      actors: [actor.kind === 'player' ? 'player' : 'kith'],
+      outcomes: [{ effects, valence: 0.5 }],
+    },
     customEffects,
   );
   const result = interact(world, registry, {
@@ -453,9 +456,11 @@ describe('interact', () => {
 
 describe('engage', () => {
   it('applies continuous effects per second engaged', () => {
-    const continuous: ContinuousEffect[] = [
+    const continuous: Effect[] = [
       { kind: 'need', need: 'hunger', delta: -0.1 },
       { kind: 'incState', field: 'count', by: 2 },
+      { kind: 'swarm', ms: 1000 },
+      { kind: 'emit', event: 'ate' },
     ];
     const { registry, world } = setup({ continuous });
     const result = engage(
@@ -467,6 +472,10 @@ describe('engage', () => {
     if (!result.ok) throw new Error(result.reason);
     expect(stateOf(result.world, 'pip').needs).toMatchObject({ hunger: 0.25 });
     expect(thingOf(result.world).count).toBe(7);
+    expect(thingOf(result.world).swarm).toEqual({ victim: 'pip', until: 2000 });
+    expect(result.events).toEqual([
+      { type: 'ate', actor: 'pip', target: 'thing' },
+    ]);
   });
 });
 

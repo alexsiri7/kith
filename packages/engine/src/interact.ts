@@ -1,7 +1,6 @@
 import type {
   ActorKind,
   AffordanceDef,
-  ContinuousEffect,
   Effect,
   EffectContext,
   Expr,
@@ -480,10 +479,16 @@ export function interact(
   };
 }
 
-function scaled(effect: ContinuousEffect, seconds: number): ContinuousEffect {
-  return effect.kind === 'incState'
-    ? { ...effect, by: effect.by * seconds }
-    : { ...effect, delta: effect.delta * seconds };
+function scaled(effect: Effect, seconds: number): Effect {
+  switch (effect.kind) {
+    case 'need':
+    case 'health':
+      return { ...effect, delta: effect.delta * seconds };
+    case 'incState':
+      return { ...effect, by: effect.by * seconds };
+    default:
+      return effect;
+  }
 }
 
 /** Applies an affordance's `continuous` effects for `dtMs` spent engaged. */
@@ -492,14 +497,22 @@ export function engage(
   registry: Registry,
   interaction: Interaction,
   dtMs: number,
-): Refusal | { readonly ok: true; readonly world: World } {
+):
+  | Refusal
+  | {
+      readonly ok: true;
+      readonly world: World;
+      readonly events: readonly GameEvent[];
+    } {
   const check = checkInteraction(world, registry, interaction);
   if (!check.ok) return check;
   const effects = (check.affordance.continuous ?? []).map((effect) =>
     scaled(effect, dtMs / 1000),
   );
+  const events: GameEvent[] = [];
   return {
     ok: true,
-    world: applyEffects(world, registry, interaction, effects, []),
+    world: applyEffects(world, registry, interaction, effects, events),
+    events,
   };
 }

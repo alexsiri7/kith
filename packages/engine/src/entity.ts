@@ -6,6 +6,7 @@ import type { EntityId } from './world.js';
 export type TypeId = string;
 export type MeaningId = string;
 export type VerbId = string;
+export type NeedId = string;
 export type SpriteRef = string;
 
 export type Category =

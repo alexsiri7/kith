@@ -7,12 +7,14 @@ import {
   formatIssues,
   type EntityType,
   type MeaningId,
+  type NeedId,
   type TypeId,
   type VerbId,
 } from './entity.js';
 
 export interface ContentDefinitions {
   readonly types: readonly EntityType[];
+  readonly needs: readonly NeedId[];
   readonly meanings: readonly MeaningId[];
   readonly verbs: readonly VerbId[];
   readonly customEffects?: Readonly<Record<string, CustomEffect>>;
@@ -70,6 +72,7 @@ function typeProblems(type: EntityType, known: KnownContent): string[] {
 /** Validates content definitions, throwing one error that lists every problem. */
 export function createRegistry(defs: ContentDefinitions): Registry {
   const problems: string[] = [];
+  const needs = uniqueSet(defs.needs, 'need', problems);
   const meanings = uniqueSet(defs.meanings, 'meaning', problems);
   const verbs = uniqueSet(defs.verbs, 'verb', problems);
   const types = uniqueSet(
@@ -80,6 +83,7 @@ export function createRegistry(defs: ContentDefinitions): Registry {
   const customEffects = new Map(Object.entries(defs.customEffects ?? {}));
   const known: KnownContent = {
     types,
+    needs,
     meanings,
     verbs,
     customEffects: new Set(customEffects.keys()),

@@ -37,6 +37,7 @@ describe('createRegistry', () => {
   it('indexes valid definitions', () => {
     const registry = createRegistry({
       types: [ball, river],
+      needs: [],
       meanings: ['ball', 'water'],
       verbs: ['kick'],
     });
@@ -63,6 +64,7 @@ describe('createRegistry', () => {
             state: z.object({ bridge: z.number().default(1) }),
           },
         ],
+        needs: [],
         meanings: ['ball'],
         verbs: ['kick'],
       });
@@ -110,6 +112,7 @@ describe('createRegistry', () => {
                 { kind: 'custom', fn: 'explode' },
                 { kind: 'sick', ms: -5 },
                 { kind: 'swarm', ms: 1000 },
+                { kind: 'need', need: 'thirst', delta: 0.1 },
               ],
             },
           ],
@@ -130,6 +133,7 @@ describe('createRegistry', () => {
     const create = () =>
       createRegistry({
         types: [hive],
+        needs: ['hunger'],
         meanings: [],
         verbs: ['kick', 'poke'],
       });
@@ -148,6 +152,7 @@ describe('createRegistry', () => {
       'type "hive" poke calls unregistered custom effect "explode"',
       'type "hive" poke sick lasts a negative or invalid -5 ms',
       'type "hive" poke reads unknown state field "swarm"',
+      'type "hive" poke changes unknown need "thirst"',
       'type "hive" use biases unknown verb "fly"',
     ]) {
       expect(create).toThrow(problem);
@@ -156,7 +161,50 @@ describe('createRegistry', () => {
 
   it('rejects duplicate meanings and verbs', () => {
     expect(() =>
-      createRegistry({ types: [], meanings: ['a', 'a'], verbs: ['v', 'v'] }),
-    ).toThrow(/duplicate meaning "a"[\s\S]*duplicate verb "v"/);
+      createRegistry({
+        types: [],
+        needs: ['n', 'n'],
+        meanings: ['a', 'a'],
+        verbs: ['v', 'v'],
+      }),
+    ).toThrow(
+      /duplicate need "n"[\s\S]*duplicate meaning "a"[\s\S]*duplicate verb "v"/,
+    );
+  });
+
+  it('rejects player affordances that name the actor as a subject', () => {
+    const lever: EntityType = {
+      ...river,
+      id: 'lever',
+      affordances: [
+        {
+          ...kick,
+          actors: ['kith', 'player'],
+          available: { is: 'bridge', of: 'actor' },
+          outcomes: [
+            {
+              valence: 0,
+              effects: [
+                { kind: 'spawn', type: 'lever', near: 'actor' },
+                { kind: 'flee', from: 'actor', ms: 1 },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const create = (actors: AffordanceDef['actors']) => () =>
+      createRegistry({
+        types: [
+          { ...lever, affordances: [{ ...lever.affordances[0]!, actors }] },
+        ],
+        needs: [],
+        meanings: [],
+        verbs: ['kick'],
+      });
+    expect(create(['kith', 'player'])).toThrow(
+      'type "lever" kick lets the player act but names the actor, who has no entity then',
+    );
+    expect(create(['kith'])).not.toThrow();
   });
 });

@@ -1,4 +1,4 @@
-import type { MeaningId, TypeId, VerbId } from './entity.js';
+import type { MeaningId, NeedId, TypeId, VerbId } from './entity.js';
 import type { GameEvent } from './event.js';
 import type { Target } from './target.js';
 import type { EntityId, World } from './world.js';
@@ -50,7 +50,7 @@ export type InteractionEventType = Extract<
  * must declare a field before an effect can touch it.
  */
 export type Effect =
-  | { readonly kind: 'need'; readonly need: string; readonly delta: number }
+  | { readonly kind: 'need'; readonly need: NeedId; readonly delta: number }
   | { readonly kind: 'health'; readonly delta: number }
   | {
       readonly kind: 'setState';
@@ -95,12 +95,6 @@ export type Effect =
 
 export type EffectList = readonly Effect[];
 
-/** Effects that scale with time spent engaged, given per second. */
-export type ContinuousEffect = Extract<
-  Effect,
-  { readonly kind: 'need' | 'health' | 'incState' }
->;
-
 export interface OutcomeResult {
   readonly effects: EffectList;
   /** How the actor felt about it; feeds opinions. */
@@ -121,7 +115,11 @@ export interface AffordanceDef {
   readonly approach: Approach;
   /** Sim time the actor spends engaged once there, in ms. */
   readonly duration?: readonly [number, number];
-  readonly continuous?: readonly ContinuousEffect[];
+  /**
+   * Applied while engaged. The amounts of `need`, `health` and `incState`
+   * are per second; other effects apply whole each time.
+   */
+  readonly continuous?: EffectList;
   readonly outcomes: readonly OutcomeDef[];
   /** How long the target refuses this verb from anyone after it resolves. */
   readonly cooldownMs?: number;
@@ -137,6 +135,7 @@ export type CustomEffect = (world: World, ctx: EffectContext) => World;
 
 export interface KnownContent {
   readonly types: ReadonlySet<TypeId>;
+  readonly needs: ReadonlySet<NeedId>;
   readonly meanings: ReadonlySet<MeaningId>;
   readonly verbs: ReadonlySet<VerbId>;
   readonly customEffects: ReadonlySet<string>;
@@ -224,6 +223,21 @@ function effectRefs(effect: Effect): FieldRef[] {
   }
 }
 
+/** Subjects an effect resolves even when the player, who has no entity, acts. */
+function subjects(effect: Effect): readonly (Subject | undefined)[] {
+  switch (effect.kind) {
+    case 'setState':
+    case 'incState':
+    case 'remove':
+    case 'carry':
+      return [effect.of];
+    case 'spawn':
+      return [effect.near];
+    default:
+      return [];
+  }
+}
+
 function fieldProblem(
   ref: FieldRef,
   defaults: Readonly<Record<string, unknown>>,
@@ -244,6 +258,11 @@ function effectProblems(effect: Effect, known: KnownContent): string[] {
     problems.push(`${effect.kind} lasts a negative or invalid ${effect.ms} ms`);
   }
   switch (effect.kind) {
+    case 'need':
+      if (!known.needs.has(effect.need)) {
+        problems.push(`changes unknown need "${effect.need}"`);
+      }
+      break;
     case 'spawn':
       if (!known.types.has(effect.type)) {
         problems.push(`spawns unknown type "${effect.type}"`);
@@ -308,6 +327,13 @@ export function affordanceProblems(
       ),
       ...effects.flatMap(effectRefs),
     ];
+    if (
+      affordance.actors.includes('player') &&
+      (refs.some((ref) => ref.of === 'actor') ||
+        effects.some((effect) => subjects(effect).includes('actor')))
+    ) {
+      say('lets the player act but names the actor, who has no entity then');
+    }
     for (const outcome of affordance.outcomes) {
       const { chance } = outcome;
       if (typeof chance === 'number' && !(chance >= 0 && chance <= 1)) {

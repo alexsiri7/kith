@@ -6,7 +6,12 @@ import { nextFloat, nextUint32, seedStream, type RngState } from './rng.js';
 import { CATCH_UP_STEP_MS, catchUp, step, type StepContext } from './step.js';
 import { createWorld, serialiseWorld, type World } from './world.js';
 
-const registry = createRegistry({ types: [], meanings: [], verbs: [] });
+const registry = createRegistry({
+  types: [],
+  needs: [],
+  meanings: [],
+  verbs: [],
+});
 
 const live: StepContext = {
   registry,
