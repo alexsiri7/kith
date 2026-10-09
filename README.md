@@ -28,6 +28,7 @@ pnpm typecheck   # tsc across the root and every package
 pnpm lint        # ESLint + Prettier check
 pnpm test        # Vitest
 pnpm build       # build every package and the prototype
+pnpm exec playwright install --with-deps chromium  # once, before the first pnpm e2e
 pnpm e2e         # Playwright, against the built server (after pnpm build)
 pnpm format      # apply Prettier
 ```
