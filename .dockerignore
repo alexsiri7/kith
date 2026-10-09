@@ -3,6 +3,5 @@ node_modules
 **/dist
 .git
 .github
-kith-prototype.zip
 prototype
 *.tsbuildinfo
