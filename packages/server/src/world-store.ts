@@ -3,8 +3,10 @@ import {
   serialiseWorld,
   validateWorld,
   type Command,
+  type Dream,
   type GameEvent,
   type Migration,
+  type Moment,
   type Registry,
   type World,
 } from '@kith/engine';
@@ -224,6 +226,18 @@ async function insertSnapshot(
   );
 }
 
+// `jsonb_to_recordset` silently drops keys it is not told about, so this must
+// name every field of a moment and a dream; adding one fails to compile here.
+const memoryFields = {
+  kith: 'text',
+  simTime: 'double precision',
+  text: 'text',
+} as const satisfies Record<keyof Moment | keyof Dream, string>;
+
+const memoryRecord = Object.entries(memoryFields)
+  .map(([field, type]) => `"${field}" ${type}`)
+  .join(', ');
+
 /**
  * Copies the world's moments and dreams into the memory book. The book keeps
  * every entry it has seen, even after the world itself lets one go.
@@ -237,8 +251,7 @@ async function recordMemories(
     await client.query(
       `INSERT INTO ${table} (world_id, kith_id, sim_time, text)
        SELECT $1, m.kith, m."simTime", m.text
-       FROM jsonb_to_recordset($2::jsonb)
-            AS m (kith text, "simTime" double precision, text text)
+       FROM jsonb_to_recordset($2::jsonb) AS m (${memoryRecord})
        ON CONFLICT DO NOTHING`,
       [worldId, JSON.stringify(world[table])],
     );
