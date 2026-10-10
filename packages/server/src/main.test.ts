@@ -1,10 +1,11 @@
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ServerOptions } from './index.js';
+import { defaultModel } from './mind.js';
 
 const validEnv = {
   DATABASE_URL: 'postgres://kith:kith@localhost:5432/kith',
-  ANTHROPIC_API_KEY: 'test-key',
+  LLM_API_KEY: 'test-key',
   APP_ORIGIN: 'http://localhost:3000',
   SESSION_SECRET: 'test-session-secret-0123456789abcdef',
   GOOGLE_CLIENT_ID: 'test-google-client-id',
@@ -71,6 +72,23 @@ describe('server entrypoint', () => {
         clientDir: expect.stringMatching(/packages[\\/]client[\\/]dist[\\/]?$/),
       }),
     );
+  });
+
+  it('thinks through Requesty with the model LLM_MODEL names', async () => {
+    vi.stubEnv('LLM_MODEL', defaultModel);
+
+    await import('./main.js');
+
+    expect(buildServer.mock.calls[0]![0].mind.mind.model).toBe(defaultModel);
+  });
+
+  it('refuses to start when LLM_MODEL has no list price', async () => {
+    vi.stubEnv('LLM_MODEL', 'anthropic/claude-sonnet-5');
+
+    await expect(import('./main.js')).rejects.toThrow(
+      'LLM_MODEL must be a Requesty model with a list price in mind.ts',
+    );
+    expect(buildServer).not.toHaveBeenCalled();
   });
 
   it('reports readiness by querying the database', async () => {

@@ -5,23 +5,33 @@ import type pg from 'pg';
 /** The game only ever asks for `quick`, which claude.ai's `sample` also offers. */
 export type ModelTier = 'quick';
 
-interface TierModel {
-  model: string;
-  /** Anthropic's list price, in millionths of a dollar per token. */
-  inputMicrodollarsPerToken: number;
-  outputMicrodollarsPerToken: number;
+function isModelTier(tier: unknown): tier is ModelTier {
+  return tier === 'quick';
 }
 
-const tierModels: Record<ModelTier, TierModel> = {
-  quick: {
-    model: 'claude-haiku-4-5-20251001',
-    inputMicrodollarsPerToken: 1,
-    outputMicrodollarsPerToken: 5,
-  },
-};
+// List prices in millionths of a dollar per token, by Requesty `provider/model`.
+// Calls are held at them, and settled at them when Requesty reports no cost of
+// its own, so the mind may only ask a model priced here.
+const listPrices = {
+  'anthropic/claude-haiku-4-5-20251001': { input: 1, output: 5 },
+} as const;
 
-function isModelTier(tier: unknown): tier is ModelTier {
-  return typeof tier === 'string' && Object.hasOwn(tierModels, tier);
+export type PricedModel = keyof typeof listPrices;
+
+/** Claude Haiku 4.5. */
+export const defaultModel: PricedModel = 'anthropic/claude-haiku-4-5-20251001';
+
+export function isPricedModel(model: string): model is PricedModel {
+  return Object.hasOwn(listPrices, model);
+}
+
+function listPrice(
+  model: PricedModel,
+  inputTokens: number,
+  outputTokens: number,
+): number {
+  const price = listPrices[model];
+  return inputTokens * price.input + outputTokens * price.output;
 }
 
 /** What one call to Claude used, as `mind_calls` records it. */
@@ -39,81 +49,89 @@ export interface Thought {
 }
 
 export interface Mind {
+  /** The model every call asks. */
+  model: PricedModel;
   /** Rejects when Claude does not answer. */
-  think(prompt: string, tier: ModelTier): Promise<Thought>;
+  think(prompt: string): Promise<Thought>;
 }
 
-export const anthropicMessagesUrl = 'https://api.anthropic.com/v1/messages';
+export const requestyChatUrl = 'https://router.requesty.ai/v1/chat/completions';
 const maxReplyTokens = 1024;
 const framingTokens = 32;
-const anthropicTimeoutMs = 30_000;
+const requestyTimeoutMs = 30_000;
 const system =
   'Reply with only the JSON the prompt asks for: no prose and no code fences.';
 
+function field(value: unknown, name: PropertyKey): unknown {
+  return typeof value === 'object' && value !== null
+    ? Reflect.get(value, name)
+    : undefined;
+}
+
 function tokenCount(usage: unknown, name: string): number {
-  const count: unknown =
-    typeof usage === 'object' && usage !== null
-      ? Reflect.get(usage, name)
-      : undefined;
+  const count = field(usage, name);
   if (!Number.isSafeInteger(count)) {
-    throw new Error(`Anthropic reply has no usage.${name}`);
+    throw new Error(`Requesty reply has no usage.${name}`);
   }
   return count as number;
 }
 
-function replyText(content: unknown): string {
-  if (!Array.isArray(content))
-    throw new Error('Anthropic reply has no content');
-  return content
-    .filter(
-      (block): block is { type: 'text'; text: string } =>
-        typeof block === 'object' &&
-        block !== null &&
-        block.type === 'text' &&
-        typeof block.text === 'string',
-    )
-    .map((block) => block.text)
-    .join('');
+/** Requesty's own cost of the call, when it reports one in US dollars. */
+function reportedCostMicrodollars(usage: unknown): number | undefined {
+  const cost = field(usage, 'cost');
+  return typeof cost === 'number' && Number.isFinite(cost) && cost >= 0
+    ? Math.round(cost * 1_000_000)
+    : undefined;
 }
 
-/** Claude through the Anthropic Messages API, paid for by `apiKey`. */
-export function anthropicMind(options: {
+function replyText(choices: unknown): string {
+  const content = field(field(field(choices, 0), 'message'), 'content');
+  if (typeof content !== 'string') {
+    throw new Error('Requesty reply has no message content');
+  }
+  return content;
+}
+
+/** Claude through Requesty's OpenAI-compatible router, paid for by `apiKey`. */
+export function requestyMind(options: {
   apiKey: string;
+  model: PricedModel;
   fetch?: typeof fetch;
 }): Mind {
+  const { apiKey, model } = options;
   const send = options.fetch ?? fetch;
   return {
-    async think(prompt, tier) {
-      const { model, inputMicrodollarsPerToken, outputMicrodollarsPerToken } =
-        tierModels[tier];
-      const res = await send(anthropicMessagesUrl, {
+    model,
+    async think(prompt) {
+      const res = await send(requestyChatUrl, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          'x-api-key': options.apiKey,
-          'anthropic-version': '2023-06-01',
+          authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model,
           max_tokens: maxReplyTokens,
-          system,
-          messages: [{ role: 'user', content: prompt }],
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: prompt },
+          ],
         }),
-        signal: AbortSignal.timeout(anthropicTimeoutMs),
+        signal: AbortSignal.timeout(requestyTimeoutMs),
       });
-      if (!res.ok) throw new Error(`Anthropic answered ${res.status}`);
+      if (!res.ok) throw new Error(`Requesty answered ${res.status}`);
       const body = (await res.json()) as Record<string, unknown>;
-      const inputTokens = tokenCount(body.usage, 'input_tokens');
-      const outputTokens = tokenCount(body.usage, 'output_tokens');
+      const inputTokens = tokenCount(body.usage, 'prompt_tokens');
+      const outputTokens = tokenCount(body.usage, 'completion_tokens');
       return {
-        text: replyText(body.content),
+        text: replyText(body.choices),
         call: {
           model,
           inputTokens,
           outputTokens,
           costMicrodollars:
-            inputTokens * inputMicrodollarsPerToken +
-            outputTokens * outputMicrodollarsPerToken,
+            reportedCostMicrodollars(body.usage) ??
+            listPrice(model, inputTokens, outputTokens),
         },
       };
     },
@@ -124,18 +142,14 @@ export function anthropicMind(options: {
  * The most a call can use: every token of a prompt is at least one byte of it,
  * plus a few to frame the message, and the reply stops at `maxReplyTokens`.
  */
-export function mostACallUses(prompt: string, tier: ModelTier): MindCall {
-  const { model, inputMicrodollarsPerToken, outputMicrodollarsPerToken } =
-    tierModels[tier];
+export function mostACallUses(prompt: string, model: PricedModel): MindCall {
   const inputTokens =
     Buffer.byteLength(system) + Buffer.byteLength(prompt) + framingTokens;
   return {
     model,
     inputTokens,
     outputTokens: maxReplyTokens,
-    costMicrodollars:
-      inputTokens * inputMicrodollarsPerToken +
-      maxReplyTokens * outputMicrodollarsPerToken,
+    costMicrodollars: listPrice(model, inputTokens, maxReplyTokens),
   };
 }
 
@@ -322,12 +336,12 @@ export const mindApi = fp<MindOptions>(async (app, { mind, usage, limits }) => {
         error: `Expected { prompt, modelTier: "quick" } with a prompt of at most ${maxPromptLength} characters`,
       });
     }
-    const { prompt, modelTier } = request.body;
+    const { prompt } = request.body;
     const ownerId = request.userId!;
     const reservation = await usage.reserve(
       ownerId,
       limits,
-      mostACallUses(prompt, modelTier),
+      mostACallUses(prompt, mind.model),
     );
     if (reservation === undefined) {
       return notGranted(
@@ -338,7 +352,7 @@ export const mindApi = fp<MindOptions>(async (app, { mind, usage, limits }) => {
     }
     let thought: Thought;
     try {
-      thought = await mind.think(prompt, modelTier);
+      thought = await mind.think(prompt);
     } catch (err) {
       await usage.release(reservation);
       request.log.warn({ err, ownerId }, 'Claude did not answer');

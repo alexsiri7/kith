@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { clientMountPath } from './client-mount.js';
 import type { IdentityProvider } from './google.js';
 import { buildServer, readAppFiles, type ServerOptions } from './index.js';
-import type { MindOptions } from './mind.js';
+import { defaultModel, type MindOptions } from './mind.js';
 import type { PrototypeWorldStore } from './prototype-worlds.js';
 
 const unusedGoogle: IdentityProvider = {
@@ -21,7 +21,10 @@ const noWorlds: PrototypeWorldStore = {
 };
 
 const noMind: MindOptions = {
-  mind: { think: () => Promise.reject(new Error('no mind here')) },
+  mind: {
+    model: defaultModel,
+    think: () => Promise.reject(new Error('no mind here')),
+  },
   usage: {
     mayThink: () => Promise.reject(new Error('no mind here')),
     reserve: () => Promise.reject(new Error('no mind here')),

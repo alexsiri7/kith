@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sessionCookie } from './auth.js';
 import { buildServer } from './index.js';
 import { migrateDatabase } from './migrations.js';
-import type { MindOptions } from './mind.js';
+import { defaultModel, type MindOptions } from './mind.js';
 import {
   PgPrototypeWorldStore,
   type PrototypeState,
@@ -22,7 +22,10 @@ const appOrigin = 'https://kith.example';
 const day = 24 * 60 * 60 * 1000;
 
 const noMind: MindOptions = {
-  mind: { think: () => Promise.reject(new Error('no mind here')) },
+  mind: {
+    model: defaultModel,
+    think: () => Promise.reject(new Error('no mind here')),
+  },
   usage: {
     mayThink: () => Promise.reject(new Error('no mind here')),
     reserve: () => Promise.reject(new Error('no mind here')),

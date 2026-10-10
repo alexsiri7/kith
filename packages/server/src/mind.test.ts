@@ -16,11 +16,12 @@ import type { PrototypeWorldStore } from './prototype-worlds.js';
 import { buildServer } from './index.js';
 import { migrateDatabase } from './migrations.js';
 import {
-  anthropicMessagesUrl,
-  anthropicMind,
+  defaultModel,
   maxPromptLength,
   parseReply,
   PgMindUsage,
+  requestyChatUrl,
+  requestyMind,
   type Mind,
   type MindCall,
   type MindLimits,
@@ -40,7 +41,7 @@ const noWorlds: PrototypeWorldStore = {
 };
 
 const call: MindCall = {
-  model: 'claude-haiku-4-5-20251001',
+  model: defaultModel,
   inputTokens: 120,
   outputTokens: 30,
   costMicrodollars: 270,
@@ -97,7 +98,7 @@ class MemoryMindUsage implements MindUsage {
 describe('/api/mind', () => {
   let app: FastifyInstance;
   let usage: MemoryMindUsage;
-  let asked: { prompt: string; tier: string }[];
+  let asked: string[];
   let think: (prompt: string) => Promise<Thought>;
   let logs: string;
 
@@ -107,8 +108,9 @@ describe('/api/mind', () => {
     think = async () => ({ text: '{"say":"hi!"}', call });
     logs = '';
     const mind: Mind = {
-      think: (prompt, tier) => {
-        asked.push({ prompt, tier });
+      model: defaultModel,
+      think: (prompt) => {
+        asked.push(prompt);
         return think(prompt);
       },
     };
@@ -200,8 +202,23 @@ describe('/api/mind', () => {
     const res = await pip.ask();
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ say: 'hi!' });
-    expect(asked).toEqual([{ prompt, tier: 'quick' }]);
+    expect(asked).toEqual([prompt]);
     expect(usage.calls).toEqual([{ ownerId: pip.userId, call }]);
+  });
+
+  it("holds the call under the mind's model until Claude answers", async () => {
+    await build();
+    let held: MindCall | undefined;
+    think = async () => {
+      held = usage.calls[0]!.call;
+      return { text: '{"say":"hi!"}', call };
+    };
+    await player().ask();
+    expect(held).toMatchObject({
+      model: defaultModel,
+      outputTokens: 1024,
+    });
+    expect(held!.costMicrodollars).toBeGreaterThan(call.costMicrodollars);
   });
 
   it('logs the tokens of each call but never the prompt or the reply', async () => {
@@ -314,12 +331,12 @@ describe('/api/mind', () => {
 
   it('answers not_granted when Claude fails, and records nothing', async () => {
     await build();
-    think = () => Promise.reject(new Error('Anthropic answered 529'));
+    think = () => Promise.reject(new Error('Requesty answered 529'));
     const res = await player().ask();
     expect(res.statusCode).toBe(502);
     expect(res.json()).toMatchObject({ code: 'not_granted' });
     expect(usage.calls).toEqual([]);
-    expect(logs).toContain('Anthropic answered 529');
+    expect(logs).toContain('Requesty answered 529');
     expect(logs).not.toContain('mind of Pip');
   });
 
@@ -354,8 +371,8 @@ describe('parseReply', () => {
   }
 });
 
-describe('anthropicMind', () => {
-  function fakeAnthropic(status: number, body: unknown) {
+describe('requestyMind', () => {
+  function fakeRequesty(status: number, body: unknown) {
     const requests: { url: string; init: RequestInit }[] = [];
     const fetch: typeof globalThis.fetch = async (url, init) => {
       requests.push({ url: String(url), init: init! });
@@ -364,49 +381,96 @@ describe('anthropicMind', () => {
     return { requests, fetch };
   }
 
-  it("asks the quick tier's model with the server's key and prices the call", async () => {
-    const anthropic = fakeAnthropic(200, {
-      content: [
-        { type: 'text', text: '{"say":' },
-        { type: 'text', text: '1}' },
-      ],
-      usage: { input_tokens: 1000, output_tokens: 200 },
-    });
-    const mind = anthropicMind({ apiKey: 'sk-test', fetch: anthropic.fetch });
+  const model = defaultModel;
+  const reply = (usage: Record<string, unknown>) => ({
+    choices: [{ message: { role: 'assistant', content: '{"say":1}' } }],
+    usage,
+  });
 
-    expect(await mind.think(prompt, 'quick')).toEqual({
+  it("asks the model with the server's key and prices the call at list price", async () => {
+    const requesty = fakeRequesty(
+      200,
+      reply({ prompt_tokens: 1000, completion_tokens: 200 }),
+    );
+    const mind = requestyMind({
+      apiKey: 'rq-test',
+      model,
+      fetch: requesty.fetch,
+    });
+
+    expect(mind.model).toBe(model);
+    expect(await mind.think(prompt)).toEqual({
       text: '{"say":1}',
       call: {
-        model: 'claude-haiku-4-5-20251001',
+        model,
         inputTokens: 1000,
         outputTokens: 200,
         costMicrodollars: 2000,
       },
     });
-    const [request] = anthropic.requests;
-    expect(request!.url).toBe(anthropicMessagesUrl);
-    expect(request!.init.headers).toMatchObject({ 'x-api-key': 'sk-test' });
+    const [request] = requesty.requests;
+    expect(request!.url).toBe(requestyChatUrl);
+    expect(request!.init.headers).toMatchObject({
+      authorization: 'Bearer rq-test',
+    });
     expect(JSON.parse(String(request!.init.body))).toMatchObject({
-      model: 'claude-haiku-4-5-20251001',
-      messages: [{ role: 'user', content: prompt }],
+      model,
+      messages: [
+        { role: 'system', content: expect.any(String) },
+        { role: 'user', content: prompt },
+      ],
     });
   });
 
-  it('rejects when Anthropic answers an error', async () => {
-    const anthropic = fakeAnthropic(401, { type: 'error' });
-    const mind = anthropicMind({ apiKey: 'sk-test', fetch: anthropic.fetch });
-    await expect(mind.think(prompt, 'quick')).rejects.toThrow(
-      'Anthropic answered 401',
+  it('prefers the cost Requesty reports', async () => {
+    const requesty = fakeRequesty(
+      200,
+      reply({ prompt_tokens: 1000, completion_tokens: 200, cost: 0.00516 }),
     );
+    const mind = requestyMind({
+      apiKey: 'rq-test',
+      model,
+      fetch: requesty.fetch,
+    });
+    expect((await mind.think(prompt)).call.costMicrodollars).toBe(5160);
+  });
+
+  it('rejects when Requesty answers an error', async () => {
+    const requesty = fakeRequesty(401, { error: { message: 'bad key' } });
+    const mind = requestyMind({
+      apiKey: 'rq-test',
+      model,
+      fetch: requesty.fetch,
+    });
+    await expect(mind.think(prompt)).rejects.toThrow('Requesty answered 401');
   });
 
   it('rejects a reply without usage', async () => {
-    const anthropic = fakeAnthropic(200, {
-      content: [{ type: 'text', text: '{}' }],
+    const requesty = fakeRequesty(200, {
+      choices: [{ message: { content: '{}' } }],
     });
-    const mind = anthropicMind({ apiKey: 'sk-test', fetch: anthropic.fetch });
-    await expect(mind.think(prompt, 'quick')).rejects.toThrow(
-      'Anthropic reply has no usage.input_tokens',
+    const mind = requestyMind({
+      apiKey: 'rq-test',
+      model,
+      fetch: requesty.fetch,
+    });
+    await expect(mind.think(prompt)).rejects.toThrow(
+      'Requesty reply has no usage.prompt_tokens',
+    );
+  });
+
+  it('rejects a reply without a message', async () => {
+    const requesty = fakeRequesty(200, {
+      choices: [],
+      usage: { prompt_tokens: 1, completion_tokens: 1 },
+    });
+    const mind = requestyMind({
+      apiKey: 'rq-test',
+      model,
+      fetch: requesty.fetch,
+    });
+    await expect(mind.think(prompt)).rejects.toThrow(
+      'Requesty reply has no message content',
     );
   });
 });

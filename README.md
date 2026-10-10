@@ -43,20 +43,21 @@ Production runs on Railway at <https://kith.interstellarai.net>, declared in `.r
 
 `packages/server` validates its environment at startup and refuses to start, listing every problem, if any of it is invalid:
 
-| Variable                 | Required | Rule                                                                                                       |
-| ------------------------ | -------- | ---------------------------------------------------------------------------------------------------------- |
-| `PORT`                   | no       | Integer 1–65535; defaults to 3000.                                                                         |
-| `DATABASE_URL`           | yes      | `postgres://` or `postgresql://` URL.                                                                      |
-| `ANTHROPIC_API_KEY`      | yes      | Non-empty.                                                                                                 |
-| `MIND_DAILY_CALLS`       | no       | Whole number; Claude calls each player's Kith may make a day (UTC); defaults to 300. 0 turns the mind off. |
-| `MIND_MONTHLY_SPEND_USD` | no       | Amount in US dollars all players' Claude calls may cost a month (UTC); defaults to 20.                     |
-| `SENTRY_DSN`             | no       | URL.                                                                                                       |
-| `APP_ORIGIN`             | yes      | Public origin, e.g. `https://kith.example` (no path).                                                      |
-| `SESSION_SECRET`         | yes      | At least 32 characters.                                                                                    |
-| `GOOGLE_CLIENT_ID`       | yes      | The Google OAuth client's id.                                                                              |
-| `GOOGLE_CLIENT_SECRET`   | yes      | The Google OAuth client's secret.                                                                          |
-| `GOOGLE_AUTH_URL`        | no       | URL; replaces Google's authorization endpoint (end-to-end tests only).                                     |
-| `GOOGLE_TOKEN_URL`       | no       | URL; replaces Google's token endpoint (end-to-end tests only).                                             |
+| Variable                 | Required | Rule                                                                                                                       |
+| ------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                   | no       | Integer 1–65535; defaults to 3000.                                                                                         |
+| `DATABASE_URL`           | yes      | `postgres://` or `postgresql://` URL.                                                                                      |
+| `LLM_API_KEY`            | yes      | Non-empty; the Requesty key.                                                                                               |
+| `LLM_MODEL`              | no       | Requesty model as `provider/model`, one with a list price in `mind.ts`; defaults to `anthropic/claude-haiku-4-5-20251001`. |
+| `MIND_DAILY_CALLS`       | no       | Whole number; Claude calls each player's Kith may make a day (UTC); defaults to 300. 0 turns the mind off.                 |
+| `MIND_MONTHLY_SPEND_USD` | no       | Amount in US dollars all players' Claude calls may cost a month (UTC); defaults to 20.                                     |
+| `SENTRY_DSN`             | no       | URL.                                                                                                                       |
+| `APP_ORIGIN`             | yes      | Public origin, e.g. `https://kith.example` (no path).                                                                      |
+| `SESSION_SECRET`         | yes      | At least 32 characters.                                                                                                    |
+| `GOOGLE_CLIENT_ID`       | yes      | The Google OAuth client's id.                                                                                              |
+| `GOOGLE_CLIENT_SECRET`   | yes      | The Google OAuth client's secret.                                                                                          |
+| `GOOGLE_AUTH_URL`        | no       | URL; replaces Google's authorization endpoint (end-to-end tests only).                                                     |
+| `GOOGLE_TOKEN_URL`       | no       | URL; replaces Google's token endpoint (end-to-end tests only).                                                             |
 
 `GET /healthz` answers as long as the process is up; `GET /readyz` answers 200 only while Postgres responds to `SELECT 1` and 503 otherwise (Railway's deploy healthcheck, see [Operations](docs/operations.md)). Logs are JSON lines; each request carries an `x-request-id` (taken from the incoming header or generated) that appears as `reqId` in its log lines and is echoed in the response.
 
@@ -91,7 +92,7 @@ The live game saves through `/api/world` (`packages/server/src/prototype-worlds.
 
 ### The Kith's mind
 
-Inside claude.ai the game thinks with the artifact runtime's `sample`; everywhere else it uses the server's `/api/mind` (`packages/server/src/mind.ts`), which asks Claude with `ANTHROPIC_API_KEY`. `GET` answers `{ available }`: whether the player is still within `MIND_DAILY_CALLS` and every player's calls together within `MIND_MONTHLY_SPEND_USD`. The game reads it on opening, and its footer says "Mind: Claude" or "Mind: simple". `POST` takes `{ prompt, modelTier: "quick" }` (Claude Haiku 4.5) and answers the JSON object Claude replied with. Past either limit it answers 429, and when Claude fails 502, both with `code: "not_granted"`, on which the game thinks with its own rules until it is next opened; a reply without JSON answers 502 with `code: "bad_reply"`, which only that one thought does without. Each call is recorded in `mind_calls` before Claude is asked, holding the most it could cost, so calls made at once cannot pass either limit; once Claude answers it is settled with its tokens and cost at Anthropic's list price and logged (`mind call`), and when Claude fails it is dropped. Neither the record nor the log holds the call's text.
+Inside claude.ai the game thinks with the artifact runtime's `sample`; everywhere else it uses the server's `/api/mind` (`packages/server/src/mind.ts`), which asks Claude through Requesty's router (`https://router.requesty.ai/v1/chat/completions`) with `LLM_API_KEY`, using the model `LLM_MODEL` names. `GET` answers `{ available }`: whether the player is still within `MIND_DAILY_CALLS` and every player's calls together within `MIND_MONTHLY_SPEND_USD`. The game reads it on opening, and its footer says "Mind: Claude" or "Mind: simple". `POST` takes `{ prompt, modelTier: "quick" }` (asked of `LLM_MODEL`, Claude Haiku 4.5 by default) and answers the JSON object Claude replied with. Past either limit it answers 429, and when Claude fails 502, both with `code: "not_granted"`, on which the game thinks with its own rules until it is next opened; a reply without JSON answers 502 with `code: "bad_reply"`, which only that one thought does without. Each call is recorded in `mind_calls` before Claude is asked, holding the most it could cost at the model's list price, so calls made at once cannot pass either limit (the server refuses to start with an `LLM_MODEL` that `mind.ts` has no list price for); once Claude answers it is settled with its tokens and the cost Requesty reports (or, when it reports none, the model's list price) and logged (`mind call`), and when Claude fails it is dropped. Neither the record nor the log holds the call's text.
 
 Build and run the image locally:
 
@@ -99,7 +100,7 @@ Build and run the image locally:
 docker build -t kith-server .
 docker run -p 3000:3000 \
   -e DATABASE_URL=postgres://kith:kith@host.docker.internal:5432/kith \
-  -e ANTHROPIC_API_KEY=... \
+  -e LLM_API_KEY=... \
   -e APP_ORIGIN=http://localhost:3000 \
   -e SESSION_SECRET=$(openssl rand -hex 32) \
   -e GOOGLE_CLIENT_ID=... \

@@ -7,7 +7,7 @@ import pg from 'pg';
 import { loadConfig } from './config.js';
 import { googleProvider } from './google.js';
 import { buildServer } from './index.js';
-import { anthropicMind, PgMindUsage } from './mind.js';
+import { PgMindUsage, requestyMind } from './mind.js';
 import { PgPrototypeWorldStore } from './prototype-worlds.js';
 import { PgUserStore } from './users.js';
 
@@ -26,7 +26,7 @@ const app = buildServer({
   },
   worlds: new PgPrototypeWorldStore(pool),
   mind: {
-    mind: anthropicMind({ apiKey: config.anthropicApiKey }),
+    mind: requestyMind(config.llm),
     usage: new PgMindUsage(pool),
     limits: config.mind,
   },
