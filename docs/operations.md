@@ -22,16 +22,18 @@ The first `apply` creates the project, the service, the database and the custom 
 
 ## Variables
 
-| Variable               | Where the value lives                                          |
-| ---------------------- | -------------------------------------------------------------- |
-| `PORT`                 | `railway.ts` (`3000`, the port the custom domain routes to).   |
-| `APP_ORIGIN`           | `railway.ts` (`https://kith.interstellarai.net`).              |
-| `DATABASE_URL`         | `railway.ts`, as a reference to `kith-db`'s `DATABASE_URL`.    |
-| `ANTHROPIC_API_KEY`    | Railway dashboard only.                                        |
-| `SESSION_SECRET`       | Railway dashboard only. Generate with `openssl rand -hex 32`.  |
-| `SENTRY_DSN`           | Railway dashboard only; may be left empty.                     |
-| `GOOGLE_CLIENT_ID`     | Railway dashboard only. See [Google sign-in](#google-sign-in). |
-| `GOOGLE_CLIENT_SECRET` | Railway dashboard only. See [Google sign-in](#google-sign-in). |
+| Variable                 | Where the value lives                                          |
+| ------------------------ | -------------------------------------------------------------- |
+| `PORT`                   | `railway.ts` (`3000`, the port the custom domain routes to).   |
+| `APP_ORIGIN`             | `railway.ts` (`https://kith.interstellarai.net`).              |
+| `DATABASE_URL`           | `railway.ts`, as a reference to `kith-db`'s `DATABASE_URL`.    |
+| `ANTHROPIC_API_KEY`      | Railway dashboard only.                                        |
+| `MIND_DAILY_CALLS`       | Unset (defaults to 300). Set in `railway.ts` to change it.     |
+| `MIND_MONTHLY_SPEND_USD` | Unset (defaults to 20). Set in `railway.ts` to change it.      |
+| `SESSION_SECRET`         | Railway dashboard only. Generate with `openssl rand -hex 32`.  |
+| `SENTRY_DSN`             | Railway dashboard only; may be left empty.                     |
+| `GOOGLE_CLIENT_ID`       | Railway dashboard only. See [Google sign-in](#google-sign-in). |
+| `GOOGLE_CLIENT_SECRET`   | Railway dashboard only. See [Google sign-in](#google-sign-in). |
 
 Secrets are declared with `preserve()`, so `apply` keeps whatever value the dashboard holds and their values never enter the repository. When you add a variable in the dashboard, add its `preserve()` line to `railway.ts` too. The server refuses to start, listing every problem, while any required variable is missing or invalid (see the README's [Server](../README.md#server) section).
 

@@ -96,6 +96,7 @@ describe.skipIf(databaseUrl === undefined)('Postgres persistence', () => {
       expect(await tableNames()).toEqual([
         'commands',
         'dreams',
+        'mind_calls',
         'moments',
         'prototype_worlds',
         'schema_migrations',

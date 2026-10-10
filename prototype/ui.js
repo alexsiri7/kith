@@ -43,6 +43,19 @@ function push(json) {
   }).catch(() => false).then(saved => { syncing = null; return saved && syncAgain ? save() : saved; });
   return syncing;
 }
+// Outside claude.ai, window.claude's sample is the server's /api/mind, there while the player is within its daily and monthly limits.
+// It rejects with the same not_granted, which turns the mind off until the game is next opened.
+async function serverMind() {
+  const res = await fetch('/api/mind', { cache: 'no-store' });
+  if (!res.ok || !(await res.json()).available) return null;
+  return { json: async (prompt, opts) => {
+    const res = await fetch('/api/mind', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt, modelTier: opts && opts.modelTier }) });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok) return body;
+    if (body.code === 'not_granted') $('#llm').textContent = 'Mind: simple';
+    throw Object.assign(new Error(body.error || `The mind answered ${res.status}`), { code: body.code });
+  } };
+}
 function select(k) { if (!k) return; world.creature = k; world.sel = k.id; panAt = 0; renderRoster(); renderPanel(); renderTalk(); }
 function withKith(k, fn) { const prev = world.creature; world.creature = k; try { return fn(); } finally { world.creature = prev; } }
 function now() { return Date.now(); }
@@ -1106,6 +1119,6 @@ $('#pname').addEventListener('input', () => $('#perr').hidden = true);
   } else { const a = suggestName(); let b = suggestName(); while (b === a) b = suggestName(); $('#cnamein').placeholder = a; $('#cname2').placeholder = b; $('#intro').hidden = false; }
   try { const note = sessionStorage.getItem(NOTE); if (note) { sessionStorage.removeItem(NOTE); toast(note); } } catch (e) {}
   requestAnimationFrame(frame);
-  try { if (window.claude && window.claude.use) sample = await window.claude.use('sample'); } catch (e) { sample = null; }
+  try { sample = window.claude && window.claude.use ? await window.claude.use('sample') : await serverMind(); } catch (e) { sample = null; }
   $('#llm').textContent = sample ? 'Mind: Claude' : 'Mind: simple';
 })();

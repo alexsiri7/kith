@@ -109,6 +109,26 @@ export const SCHEMA_MIGRATIONS: readonly SchemaMigration[] = [
       );
     `,
   },
+  {
+    name: '004_mind_calls',
+    sql: `
+      -- One row per Claude call made for a player's Kith, for the daily call
+      -- limit and the monthly spend cap. Never the prompt or the reply.
+      -- A call is recorded before Claude is asked, holding the most it could
+      -- cost, and settled with what it used once Claude answers.
+      CREATE TABLE mind_calls (
+        id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        owner_id uuid NOT NULL REFERENCES users (id),
+        called_at timestamptz NOT NULL DEFAULT now(),
+        model text NOT NULL,
+        input_tokens integer NOT NULL,
+        output_tokens integer NOT NULL,
+        cost_microdollars bigint NOT NULL
+      );
+      CREATE INDEX mind_calls_owner_id_called_at ON mind_calls (owner_id, called_at);
+      CREATE INDEX mind_calls_called_at ON mind_calls (called_at);
+    `,
+  },
 ];
 
 // Arbitrary, but fixed: every process migrating this database must agree on it.

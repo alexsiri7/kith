@@ -47,7 +47,8 @@ declare global {
       stage: string;
       hatchAt: number;
       dies: number;
-      lex: Record<string, { m: string }>;
+      asleep: boolean;
+      lex: Record<string, { m: string; s: number; at: number }>;
     };
   };
   interface Window {
@@ -587,6 +588,69 @@ test('tells the player when the server refuses their saves', async ({
   await expect(page.locator('#toast')).toHaveText(
     "Your world isn't saving to the server (error 413). It's kept on this device for now.",
   );
+});
+
+test('thinks without Claude while the server has no calls to give', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Sign in with Google' }).click();
+  await startWorld(page);
+  await expect(page.locator('#llm')).toHaveText('Mind: simple');
+});
+
+test("talks with Claude's reply from the server, and without Claude once it is refused", async ({
+  page,
+}) => {
+  const asked: { prompt: string; modelTier: string }[] = [];
+  let refuse = false;
+  await page.route('/api/mind', (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({ json: { available: true } });
+    }
+    asked.push(route.request().postDataJSON());
+    return refuse
+      ? route.fulfill({
+          status: 429,
+          json: { error: 'Enough for today', code: 'not_granted' },
+        })
+      : route.fulfill({ json: { learned: [], say: 'yum!', mood: 'happy' } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Sign in with Google' }).click();
+  await startWorld(page);
+  await expect(page.locator('#llm')).toHaveText('Mind: Claude');
+  await page.evaluate(() => {
+    world.creature.hatchAt = world.simTime;
+  });
+  await expect
+    .poll(() => page.evaluate(() => world.creature.stage))
+    .not.toBe('egg');
+  await page.evaluate(() => {
+    world.creature.asleep = false;
+    world.creature.lex.yum = { m: 'food', s: 1, at: world.simTime };
+  });
+
+  const say = async (text: string) => {
+    await page.locator('#msg').fill(text);
+    await page.locator('#talk').getByRole('button', { name: 'Say' }).click();
+  };
+  const chat = page.locator('#chat p');
+  await say('hello pip');
+  await expect(chat.last()).toHaveText('Pip yum!');
+  expect(asked).toContainEqual({
+    prompt: expect.stringContaining('The player just said: "hello pip"'),
+    modelTier: 'quick',
+  });
+
+  refuse = true;
+  await say('hello again');
+  await expect(page.locator('#llm')).toHaveText('Mind: simple');
+  const calls = asked.length;
+  await say('still there?');
+  await expect(chat.nth(-2)).toHaveText('Alex still there?');
+  await expect(chat.last()).toContainText('Pip');
+  expect(asked).toHaveLength(calls);
 });
 
 test('keeps the new client at its mount', async ({ page }) => {

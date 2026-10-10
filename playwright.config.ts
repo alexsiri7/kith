@@ -32,6 +32,9 @@ export default defineConfig({
           process.env.TEST_DATABASE_URL ??
           'postgres://kith:kith@127.0.0.1:5432/kith',
         ANTHROPIC_API_KEY: 'e2e-placeholder',
+        // Keeps the game off the real Anthropic API; tests that need the mind
+        // answer /api/mind themselves.
+        MIND_DAILY_CALLS: '0',
         APP_ORIGIN: `http://localhost:${port}`,
         SESSION_SECRET: 'e2e-placeholder-session-secret-0123456789',
         ...google,

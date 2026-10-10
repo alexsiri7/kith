@@ -1,10 +1,12 @@
 import { googleAuthorizationUrl, googleTokenUrl } from './google.js';
+import type { MindLimits } from './mind.js';
 import { resolvePort } from './port.js';
 
 export interface Config {
   port: number;
   databaseUrl: string;
   anthropicApiKey: string;
+  mind: MindLimits;
   sentryDsn: string | undefined;
   appOrigin: string;
   sessionSecret: string;
@@ -60,6 +62,34 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
 
   const anthropicApiKey = required('ANTHROPIC_API_KEY');
 
+  const optionalNumber = (
+    name: string,
+    fallback: number,
+    pattern: RegExp,
+    rule: string,
+  ): number => {
+    const value = env[name];
+    if (value === undefined || value === '') return fallback;
+    if (!pattern.test(value)) {
+      problems.push(`${name} must be ${rule}, got "${value}"`);
+    }
+    return Number(value);
+  };
+  const mind = {
+    dailyCalls: optionalNumber(
+      'MIND_DAILY_CALLS',
+      300,
+      /^\d{1,9}$/,
+      'a whole number of calls',
+    ),
+    monthlySpendUsd: optionalNumber(
+      'MIND_MONTHLY_SPEND_USD',
+      20,
+      /^\d{1,9}(\.\d+)?$/,
+      'an amount in US dollars',
+    ),
+  };
+
   const sentryDsn = env.SENTRY_DSN === '' ? undefined : env.SENTRY_DSN;
   if (
     sentryDsn !== undefined &&
@@ -110,6 +140,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     port,
     databaseUrl,
     anthropicApiKey,
+    mind,
     sentryDsn,
     appOrigin,
     sessionSecret,

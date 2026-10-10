@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sessionCookie, sessionMaxAgeSeconds } from './auth.js';
 import { googleProvider, type GoogleIdentity } from './google.js';
 import { buildServer } from './index.js';
+import type { MindOptions } from './mind.js';
 import type { PrototypeWorldStore } from './prototype-worlds.js';
 import type { UserStore } from './users.js';
 
@@ -20,6 +21,17 @@ const noWorlds: PrototypeWorldStore = {
   load: () => Promise.reject(new Error('no worlds here')),
   save: () => Promise.reject(new Error('no worlds here')),
   erase: () => Promise.reject(new Error('no worlds here')),
+};
+
+const noMind: MindOptions = {
+  mind: { think: () => Promise.reject(new Error('no mind here')) },
+  usage: {
+    mayThink: () => Promise.reject(new Error('no mind here')),
+    reserve: () => Promise.reject(new Error('no mind here')),
+    settle: () => Promise.reject(new Error('no mind here')),
+    release: () => Promise.reject(new Error('no mind here')),
+  },
+  limits: { dailyCalls: 0, monthlySpendUsd: 0 },
 };
 
 const base64url = (value: unknown) =>
@@ -113,6 +125,7 @@ describe('Google sign-in', () => {
         users,
       },
       worlds: noWorlds,
+      mind: noMind,
     });
     app.get('/api/probe', (request) => ({ userId: request.userId }));
     app.post('/api/probe', (request) => ({ userId: request.userId }));

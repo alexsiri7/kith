@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sessionCookie } from './auth.js';
 import { buildServer } from './index.js';
 import { migrateDatabase } from './migrations.js';
+import type { MindOptions } from './mind.js';
 import {
   PgPrototypeWorldStore,
   type PrototypeState,
@@ -19,6 +20,17 @@ if (databaseUrl === undefined && process.env.CI !== undefined) {
 
 const appOrigin = 'https://kith.example';
 const day = 24 * 60 * 60 * 1000;
+
+const noMind: MindOptions = {
+  mind: { think: () => Promise.reject(new Error('no mind here')) },
+  usage: {
+    mayThink: () => Promise.reject(new Error('no mind here')),
+    reserve: () => Promise.reject(new Error('no mind here')),
+    settle: () => Promise.reject(new Error('no mind here')),
+    release: () => Promise.reject(new Error('no mind here')),
+  },
+  limits: { dailyCalls: 0, monthlySpendUsd: 0 },
+};
 const savedWorld: PrototypeState = JSON.parse(
   readFileSync(
     new URL('../../content/src/prototype-v22.fixture.json', import.meta.url),
@@ -55,6 +67,7 @@ describe.skipIf(databaseUrl === undefined)('/api/world', () => {
         users,
       },
       worlds: new PgPrototypeWorldStore(pool),
+      mind: noMind,
     });
     await app.ready();
   });
