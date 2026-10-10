@@ -97,6 +97,7 @@ describe.skipIf(databaseUrl === undefined)('Postgres persistence', () => {
         'commands',
         'dreams',
         'moments',
+        'prototype_worlds',
         'schema_migrations',
         'users',
         'world_events',

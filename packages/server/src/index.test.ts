@@ -6,10 +6,17 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { clientMountPath } from './client-mount.js';
 import type { IdentityProvider } from './google.js';
 import { buildServer, readAppFiles, type ServerOptions } from './index.js';
+import type { PrototypeWorldStore } from './prototype-worlds.js';
 
 const unusedGoogle: IdentityProvider = {
   authorizationUrl: () => 'https://google.test/auth',
   identify: () => Promise.reject(new Error('not signing in here')),
+};
+
+const noWorlds: PrototypeWorldStore = {
+  load: () => Promise.reject(new Error('no worlds here')),
+  save: () => Promise.reject(new Error('no worlds here')),
+  erase: () => Promise.reject(new Error('no worlds here')),
 };
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -34,6 +41,7 @@ describe('server', () => {
         google: unusedGoogle,
         users: { signIn: () => Promise.reject(new Error('no users here')) },
       },
+      worlds: noWorlds,
       ...options,
     });
     return app;
