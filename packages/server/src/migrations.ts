@@ -94,6 +94,21 @@ export const SCHEMA_MIGRATIONS: readonly SchemaMigration[] = [
       ALTER TABLE users DROP CONSTRAINT users_email_key;
     `,
   },
+  {
+    name: '003_prototype_worlds',
+    sql: `
+      -- The v2.2 prototype's own save, as the game sends it, until the engine's
+      -- worlds replace it. Starting over sets state to null but keeps counting
+      -- versions, so a device still holding the old world can't overwrite the
+      -- new one. json, not jsonb: the save comes back exactly as it was sent.
+      CREATE TABLE prototype_worlds (
+        owner_id uuid PRIMARY KEY REFERENCES users (id),
+        version integer NOT NULL,
+        state json,
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `,
+  },
 ];
 
 // Arbitrary, but fixed: every process migrating this database must agree on it.

@@ -30,9 +30,12 @@ const ITEM_TYPES: Readonly<Record<string, TypeId>> = {
 /** Centre of the prototype's `RIVER` span, x 1180 to 1300. */
 const RIVER_X = 1240;
 
-// Only the fields the world model holds today. Brain, language, social state
-// and the rest of the garden are left for the full import (#16).
-const prototypeSave = z.object({
+/**
+ * A v2.2 prototype save, checked for the fields the world model holds today.
+ * Brain, language, social state and the rest of the garden are left for the
+ * full import (#16) and pass through unchecked.
+ */
+export const prototypeSave = z.object({
   v: z.literal(1),
   seed: z.int().min(0).max(0xffffffff),
   scale: z.number().positive().optional(),

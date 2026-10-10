@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sessionCookie, sessionMaxAgeSeconds } from './auth.js';
 import { googleProvider, type GoogleIdentity } from './google.js';
 import { buildServer } from './index.js';
+import type { PrototypeWorldStore } from './prototype-worlds.js';
 import type { UserStore } from './users.js';
 
 const appOrigin = 'https://kith.example';
@@ -14,6 +15,12 @@ const clientId = 'kith-client-id';
 const clientSecret = 'kith-client-secret';
 const tokenUrl = 'https://google.test/token';
 const day = 24 * 60 * 60 * 1000;
+
+const noWorlds: PrototypeWorldStore = {
+  load: () => Promise.reject(new Error('no worlds here')),
+  save: () => Promise.reject(new Error('no worlds here')),
+  erase: () => Promise.reject(new Error('no worlds here')),
+};
 
 const base64url = (value: unknown) =>
   Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -105,6 +112,7 @@ describe('Google sign-in', () => {
         google: google.provider,
         users,
       },
+      worlds: noWorlds,
     });
     app.get('/api/probe', (request) => ({ userId: request.userId }));
     app.post('/api/probe', (request) => ({ userId: request.userId }));

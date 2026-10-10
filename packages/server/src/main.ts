@@ -7,6 +7,7 @@ import pg from 'pg';
 import { loadConfig } from './config.js';
 import { googleProvider } from './google.js';
 import { buildServer } from './index.js';
+import { PgPrototypeWorldStore } from './prototype-worlds.js';
 import { PgUserStore } from './users.js';
 
 const config = loadConfig(process.env);
@@ -22,6 +23,7 @@ const app = buildServer({
     google: googleProvider(config.google),
     users: new PgUserStore(pool),
   },
+  worlds: new PgPrototypeWorldStore(pool),
   // Same relative paths from src/ (tests) and dist/ (image).
   gameDir: fileURLToPath(new URL('../../../prototype/dist/', import.meta.url)),
   clientDir: fileURLToPath(new URL('../../client/dist/', import.meta.url)),

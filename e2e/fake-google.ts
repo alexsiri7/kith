@@ -1,11 +1,11 @@
 // Stands in for Google's OAuth endpoints during the end-to-end tests: the
-// consent screen approves at once, as the one account below, and the token
-// endpoint checks what Google would before issuing an ID token.
+// consent screen approves at once, as a new account each time so every test
+// starts without a world, and the token endpoint checks what Google would
+// before issuing an ID token.
 import { createHash, randomUUID } from 'node:crypto';
 import { createServer, type IncomingMessage } from 'node:http';
 
 const account = {
-  sub: 'e2e-google-subject',
   email: 'player@kith.example',
   name: 'Alex',
 };
@@ -15,6 +15,7 @@ const clientId = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
 interface Grant {
+  subject: string;
   redirectUri: string;
   codeChallenge: string;
 }
@@ -46,7 +47,7 @@ createServer(async (request, response) => {
       return;
     }
     const code = randomUUID();
-    grants.set(code, { redirectUri, codeChallenge });
+    grants.set(code, { subject: randomUUID(), redirectUri, codeChallenge });
     const callback = new URL(redirectUri);
     callback.searchParams.set('code', code);
     callback.searchParams.set('state', query.get('state') ?? '');
@@ -74,6 +75,7 @@ createServer(async (request, response) => {
     }
     const claims = {
       ...account,
+      sub: grant.subject,
       iss: 'https://accounts.google.com',
       aud: clientId,
       exp: Math.floor(Date.now() / 1000) + 3600,

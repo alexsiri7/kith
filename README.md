@@ -33,7 +33,7 @@ pnpm e2e         # Playwright, against the built server (after pnpm build; needs
 pnpm format      # apply Prettier
 ```
 
-The Postgres integration tests (`packages/server/src/world-store.test.ts`) run only when `TEST_DATABASE_URL` points at a database they may create and drop schemas in, e.g. `TEST_DATABASE_URL=postgres://kith:kith@localhost:5432/kith pnpm test`; each run works in a fresh schema of its own. Without it they are skipped locally and fail in CI. `pnpm e2e` signs in, so it migrates and writes users to the database at `TEST_DATABASE_URL` (default `postgres://kith:kith@127.0.0.1:5432/kith`); it signs in through a fake Google (`e2e/fake-google.ts`) that Playwright starts beside the server.
+The Postgres integration tests (the `packages/server/src/*.test.ts` files that read `TEST_DATABASE_URL`) run only when `TEST_DATABASE_URL` points at a database they may create and drop schemas in, e.g. `TEST_DATABASE_URL=postgres://kith:kith@localhost:5432/kith pnpm test`; each run works in a fresh schema of its own. Without it they are skipped locally and fail in CI. `pnpm e2e` signs in, so it migrates and writes users and worlds to the database at `TEST_DATABASE_URL` (default `postgres://kith:kith@127.0.0.1:5432/kith`); it signs in through a fake Google (`e2e/fake-google.ts`) that Playwright starts beside the server, as a new account each time.
 
 CI (`.github/workflows/ci.yml`) runs install, typecheck, lint, test (against a Postgres service container) and build on every pull request and on `main`, migrates an empty database with the built server, runs the Playwright tests (`e2e/`) against the built server, and builds the Docker image and checks that it serves `/healthz`, the welcome page and the client.
 
@@ -80,8 +80,11 @@ Worlds are stored in Postgres. `packages/server/src/migrations.ts` holds the sch
 | `world_events`     | Append-only game events, numbered per world. Nothing prunes them yet (see below).                              |
 | `moments`/`dreams` | The memory book: every moment and dream a world has held, kept forever even after the world itself drops them. |
 | `commands`         | Every player command received, numbered per world, for replay and debugging.                                   |
+| `prototype_worlds` | The live v2.2 game's world, one per player, as the game saves it; replaced by `worlds` at the engine cutover.  |
 
 `PgWorldStore` (`packages/server/src/world-store.ts`) implements the `WorldStore` interface. `save(worldId, baseVersion, world, events)` writes the next version only if the stored version is still `baseVersion` and throws `WorldVersionConflict` otherwise, so two writers never silently overwrite each other. Loaded snapshots go through the engine's save migrations and validation. `pruneEvents(now)` implements the event retention — routine events older than 30 days are deleted — but nothing calls it yet: until a scheduler does, `world_events` grows without bound.
+
+The live game saves through `/api/world` (`packages/server/src/prototype-worlds.ts`). `GET` returns the signed-in player's `{ state, version }`, or 404 with the `version` when they have none. `PUT` takes `{ state, version }` of at most 2 MiB and saves it as the next version only if `version` is still the stored one (0 for a first save); otherwise it answers 409 with the stored `{ state, version }`, and the game reloads that world with the toast "Updated from your other device". `DELETE` is Start over: it forgets the world but keeps counting versions, so a device still holding the old world can't save it back. The game keeps its world in `localStorage` too, so it opens and plays offline and uploads the changes on its next save once the server is reachable again.
 
 Build and run the image locally:
 

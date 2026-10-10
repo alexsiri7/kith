@@ -8,6 +8,7 @@ import Fastify, {
 } from 'fastify';
 import { auth, type AuthOptions } from './auth.js';
 import { clientMountPath } from './client-mount.js';
+import { worldApi, type PrototypeWorldStore } from './prototype-worlds.js';
 
 /**
  * The files `prototype/build.js` writes beside the pages so the game installs
@@ -32,6 +33,7 @@ export function readAppFiles(gameDir: string): string[] {
 export interface ServerOptions {
   checkDatabase: () => Promise<unknown>;
   auth: AuthOptions;
+  worlds: PrototypeWorldStore;
   /**
    * The built v2.2 prototype. `/` serves its game to signed-in players and
    * its welcome page to everyone else; the files its `app-files.json` lists are
@@ -54,6 +56,7 @@ export function buildServer(options: ServerOptions): FastifyInstance {
     reply.header('x-request-id', request.id);
   });
   app.register(auth, options.auth);
+  app.register(worldApi, { worlds: options.worlds });
 
   app.get('/healthz', () => ({ status: 'ok' }));
   app.get('/readyz', async (request, reply) => {
