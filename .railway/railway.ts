@@ -38,7 +38,7 @@ export default defineRailway(() => {
       PORT: String(port),
       APP_ORIGIN: `https://${domain}`,
       DATABASE_URL: db.env.DATABASE_URL,
-      ANTHROPIC_API_KEY: preserve(),
+      LLM_API_KEY: preserve(),
       SESSION_SECRET: preserve(),
       SENTRY_DSN: preserve(),
       GOOGLE_CLIENT_ID: preserve(),

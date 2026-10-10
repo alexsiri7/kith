@@ -41,7 +41,7 @@ describe('Railway config', () => {
   it('keeps every secret out of the repo', async () => {
     const { env } = await kithService();
     for (const secret of [
-      'ANTHROPIC_API_KEY',
+      'LLM_API_KEY',
       'SESSION_SECRET',
       'SENTRY_DSN',
       'GOOGLE_CLIENT_ID',

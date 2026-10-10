@@ -27,7 +27,8 @@ The first `apply` creates the project, the service, the database and the custom 
 | `PORT`                   | `railway.ts` (`3000`, the port the custom domain routes to).   |
 | `APP_ORIGIN`             | `railway.ts` (`https://kith.interstellarai.net`).              |
 | `DATABASE_URL`           | `railway.ts`, as a reference to `kith-db`'s `DATABASE_URL`.    |
-| `ANTHROPIC_API_KEY`      | Railway dashboard only.                                        |
+| `LLM_API_KEY`            | Railway dashboard only. The Requesty key.                      |
+| `LLM_MODEL`              | Unset (defaults to Claude Haiku 4.5); set in `railway.ts`.     |
 | `MIND_DAILY_CALLS`       | Unset (defaults to 300). Set in `railway.ts` to change it.     |
 | `MIND_MONTHLY_SPEND_USD` | Unset (defaults to 20). Set in `railway.ts` to change it.      |
 | `SESSION_SECRET`         | Railway dashboard only. Generate with `openssl rand -hex 32`.  |

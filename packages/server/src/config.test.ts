@@ -4,7 +4,7 @@ import { loadConfig } from './config.js';
 const sessionSecret = 's'.repeat(32);
 const validEnv = {
   DATABASE_URL: 'postgres://kith:db-password@localhost:5432/kith',
-  ANTHROPIC_API_KEY: 'test-anthropic-key',
+  LLM_API_KEY: 'test-llm-key',
   APP_ORIGIN: 'https://kith.example',
   SESSION_SECRET: sessionSecret,
   GOOGLE_CLIENT_ID: 'test-google-client-id',
@@ -31,7 +31,10 @@ describe('loadConfig', () => {
     ).toEqual({
       port: 8080,
       databaseUrl: validEnv.DATABASE_URL,
-      anthropicApiKey: validEnv.ANTHROPIC_API_KEY,
+      llm: {
+        apiKey: validEnv.LLM_API_KEY,
+        model: 'anthropic/claude-haiku-4-5-20251001',
+      },
       mind: { dailyCalls: 300, monthlySpendUsd: 20 },
       sentryDsn: 'https://key@sentry.example/1',
       appOrigin: 'https://kith.example',
@@ -104,6 +107,21 @@ describe('loadConfig', () => {
     });
   }
 
+  it('lets LLM_MODEL choose the model', () => {
+    expect(
+      loadConfig({ ...validEnv, LLM_MODEL: 'anthropic/claude-sonnet-5' }).llm
+        .model,
+    ).toBe('anthropic/claude-sonnet-5');
+  });
+
+  for (const model of ['claude-haiku-4-5', 'anthropic/', 'anthropic/a b']) {
+    it(`rejects LLM_MODEL ${JSON.stringify(model)}`, () => {
+      expect(problemsFor({ ...validEnv, LLM_MODEL: model })).toContain(
+        `LLM_MODEL must be a Requesty model like anthropic/claude-haiku-4-5-20251001, got "${model}"`,
+      );
+    });
+  }
+
   it('accepts postgresql:// database URLs', () => {
     const databaseUrl = 'postgresql://kith@db.internal/kith';
     expect(
@@ -113,7 +131,7 @@ describe('loadConfig', () => {
 
   for (const name of [
     'DATABASE_URL',
-    'ANTHROPIC_API_KEY',
+    'LLM_API_KEY',
     'APP_ORIGIN',
     'SESSION_SECRET',
     'GOOGLE_CLIENT_ID',
@@ -173,7 +191,7 @@ describe('loadConfig', () => {
     expect(message).toMatch(/^Invalid configuration:\n- /);
     expect(message).toContain('PORT must be an integer');
     expect(message).toContain('DATABASE_URL must be set');
-    expect(message).toContain('ANTHROPIC_API_KEY must be set');
+    expect(message).toContain('LLM_API_KEY must be set');
     expect(message).toContain('APP_ORIGIN must be an origin');
     expect(message).toContain('SESSION_SECRET must be set');
     expect(message).toContain('GOOGLE_CLIENT_ID must be set');
@@ -189,7 +207,7 @@ describe('loadConfig', () => {
     });
     expect(message).not.toContain('db-password');
     expect(message).not.toContain('short-session-secret');
-    expect(message).not.toContain('test-anthropic-key');
+    expect(message).not.toContain('test-llm-key');
     expect(message).not.toContain('test-google-client-secret');
   });
 });

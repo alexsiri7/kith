@@ -1,11 +1,11 @@
 import { googleAuthorizationUrl, googleTokenUrl } from './google.js';
-import type { MindLimits } from './mind.js';
+import { defaultModel, type MindLimits } from './mind.js';
 import { resolvePort } from './port.js';
 
 export interface Config {
   port: number;
   databaseUrl: string;
-  anthropicApiKey: string;
+  llm: { apiKey: string; model: string };
   mind: MindLimits;
   sentryDsn: string | undefined;
   appOrigin: string;
@@ -32,7 +32,7 @@ function hasProtocol(url: URL | undefined, protocols: string[]): boolean {
   return url !== undefined && protocols.includes(url.protocol);
 }
 
-// Error messages never include DATABASE_URL, ANTHROPIC_API_KEY,
+// Error messages never include DATABASE_URL, LLM_API_KEY,
 // SESSION_SECRET or GOOGLE_CLIENT_SECRET values: startup errors end up in deploy logs.
 export function loadConfig(env: Record<string, string | undefined>): Config {
   const problems: string[] = [];
@@ -60,7 +60,13 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     problems.push('DATABASE_URL must be a postgres:// or postgresql:// URL');
   }
 
-  const anthropicApiKey = required('ANTHROPIC_API_KEY');
+  const llmModel = env.LLM_MODEL || defaultModel;
+  if (!/^[^/\s]+\/\S+$/.test(llmModel)) {
+    problems.push(
+      `LLM_MODEL must be a Requesty model like ${defaultModel}, got "${llmModel}"`,
+    );
+  }
+  const llm = { apiKey: required('LLM_API_KEY'), model: llmModel };
 
   const optionalNumber = (
     name: string,
@@ -139,7 +145,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   return {
     port,
     databaseUrl,
-    anthropicApiKey,
+    llm,
     mind,
     sentryDsn,
     appOrigin,

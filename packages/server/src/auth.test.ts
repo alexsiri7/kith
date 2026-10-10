@@ -24,7 +24,10 @@ const noWorlds: PrototypeWorldStore = {
 };
 
 const noMind: MindOptions = {
-  mind: { think: () => Promise.reject(new Error('no mind here')) },
+  mind: {
+    model: 'anthropic/no-mind',
+    think: () => Promise.reject(new Error('no mind here')),
+  },
   usage: {
     mayThink: () => Promise.reject(new Error('no mind here')),
     reserve: () => Promise.reject(new Error('no mind here')),
