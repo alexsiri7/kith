@@ -2,7 +2,15 @@ import { randomUUID } from 'node:crypto';
 import { Writable } from 'node:stream';
 import type { FastifyInstance } from 'fastify';
 import pg from 'pg';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { sessionCookie } from './auth.js';
 import type { PrototypeWorldStore } from './prototype-worlds.js';
 import { buildServer } from './index.js';
@@ -39,18 +47,50 @@ const call: MindCall = {
 };
 
 class MemoryMindUsage implements MindUsage {
-  readonly calls: { ownerId: string; call: MindCall }[] = [];
+  private readonly recorded = new Map<
+    string,
+    { ownerId: string; call: MindCall }
+  >();
+  private reservations = 0;
 
-  async callsToday(ownerId: string): Promise<number> {
-    return this.calls.filter((c) => c.ownerId === ownerId).length;
+  /** Every call recorded, settled or not. */
+  get calls() {
+    return [...this.recorded.values()];
   }
 
-  async spendThisMonthMicrodollars(): Promise<number> {
-    return this.calls.reduce((sum, c) => sum + c.call.costMicrodollars, 0);
+  // Synchronous, so no other call can be reserved between its check and write.
+  private within(ownerId: string, limits: MindLimits): boolean {
+    const calls = this.calls.filter((c) => c.ownerId === ownerId).length;
+    const spend = this.calls.reduce(
+      (sum, c) => sum + c.call.costMicrodollars,
+      0,
+    );
+    return (
+      calls < limits.dailyCalls && spend < limits.monthlySpendUsd * 1_000_000
+    );
   }
 
-  async record(ownerId: string, call: MindCall): Promise<void> {
-    this.calls.push({ ownerId, call });
+  async mayThink(ownerId: string, limits: MindLimits): Promise<boolean> {
+    return this.within(ownerId, limits);
+  }
+
+  async reserve(
+    ownerId: string,
+    limits: MindLimits,
+    held: MindCall,
+  ): Promise<string | undefined> {
+    if (!this.within(ownerId, limits)) return undefined;
+    const reservation = String(++this.reservations);
+    this.recorded.set(reservation, { ownerId, call: held });
+    return reservation;
+  }
+
+  async settle(reservation: string, call: MindCall): Promise<void> {
+    this.recorded.get(reservation)!.call = call;
+  }
+
+  async release(reservation: string): Promise<void> {
+    this.recorded.delete(reservation);
   }
 }
 
@@ -216,6 +256,41 @@ describe('/api/mind', () => {
     expect((await tam.ask()).statusCode).toBe(200);
   });
 
+  /** Asks for each player at once, with Claude answering only once all have
+   * been let through or one has been refused. */
+  async function askTogether(players: ReturnType<typeof player>[]) {
+    let answer!: () => void;
+    const claudeAnswers = new Promise<void>((resolve) => (answer = resolve));
+    think = async () => {
+      await claudeAnswers;
+      return { text: '{"say":"hi!"}', call };
+    };
+    const asking = players.map((p) => p.ask());
+    await Promise.race([
+      ...asking,
+      vi.waitFor(() => expect(asked).toHaveLength(players.length)),
+    ]);
+    answer();
+    const answers = await Promise.all(asking);
+    return answers.map((a) => a.statusCode).sort();
+  }
+
+  it('lets only one of two calls made together past a daily limit of one', async () => {
+    await build({ dailyCalls: 1 });
+    const pip = player();
+    expect(await askTogether([pip, pip])).toEqual([200, 429]);
+    expect(asked).toHaveLength(1);
+    expect(usage.calls).toEqual([{ ownerId: pip.userId, call }]);
+  });
+
+  it('holds the most a call could cost against the monthly spend until Claude answers', async () => {
+    // Far more than a call costs, far less than the most it could.
+    await build({ monthlySpendUsd: 0.001 });
+    expect(await askTogether([player(), player()])).toEqual([200, 429]);
+    expect(asked).toHaveLength(1);
+    expect(usage.calls.map((c) => c.call)).toEqual([call]);
+  });
+
   it('is off for everyone when the daily limit is 0', async () => {
     await build({ dailyCalls: 0 });
     const pip = player();
@@ -254,7 +329,9 @@ describe('/api/mind', () => {
     const res = await player().ask();
     expect(res.statusCode).toBe(502);
     expect(res.json()).toMatchObject({ code: 'bad_reply' });
-    expect(usage.calls).toHaveLength(1);
+    expect(usage.calls.map((c) => c.call)).toEqual([call]);
+    expect(logs).toContain('Claude replied without JSON');
+    expect(logs).not.toContain('I would rather not.');
   });
 });
 
@@ -371,6 +448,8 @@ describe.skipIf(databaseUrl === undefined)('PgMindUsage', () => {
       displayName: 'Player',
     });
 
+  const limits: MindLimits = { dailyCalls: 2, monthlySpendUsd: 1_000_000 };
+
   async function recordAt(ownerId: string, calledAt: string, cost: number) {
     await pool.query(
       `INSERT INTO mind_calls
@@ -380,39 +459,78 @@ describe.skipIf(databaseUrl === undefined)('PgMindUsage', () => {
     );
   }
 
-  it("counts the player's calls since midnight UTC", async () => {
+  async function costs(ownerId: string): Promise<number[]> {
+    const { rows } = await pool.query<{ cost: string }>(
+      `SELECT cost_microdollars AS cost FROM mind_calls
+       WHERE owner_id = $1 ORDER BY id`,
+      [ownerId],
+    );
+    return rows.map((r) => Number(r.cost));
+  }
+
+  it("counts the player's calls since midnight UTC against the daily limit", async () => {
     const pip = await newPlayer();
     const tam = await newPlayer();
-    expect(await usage.callsToday(pip)).toBe(0);
-
-    await usage.record(pip, call);
-    await usage.record(pip, call);
-    await usage.record(tam, call);
     await recordAt(
       pip,
       `date_trunc('day', now(), 'UTC') - interval '1 second'`,
       0,
     );
+    expect(await usage.mayThink(pip, limits)).toBe(true);
 
-    expect(await usage.callsToday(pip)).toBe(2);
-    expect(await usage.callsToday(tam)).toBe(1);
+    expect(await usage.reserve(pip, limits, call)).toBeDefined();
+    expect(await usage.reserve(pip, limits, call)).toBeDefined();
+    expect(await usage.mayThink(pip, limits)).toBe(false);
+    expect(await usage.reserve(pip, limits, call)).toBeUndefined();
+
+    expect(await usage.mayThink(tam, limits)).toBe(true);
+    expect(await usage.reserve(tam, limits, call)).toBeDefined();
   });
 
-  it("adds up every player's spend since the 1st of the month UTC", async () => {
-    const before = await usage.spendThisMonthMicrodollars();
+  it("measures every player's spend since the 1st of the month UTC against the cap", async () => {
     const pip = await newPlayer();
     const tam = await newPlayer();
-
-    await usage.record(pip, call);
-    await usage.record(tam, { ...call, costMicrodollars: 1_000_000 });
     await recordAt(
       pip,
       `date_trunc('month', now(), 'UTC') - interval '1 second'`,
-      5_000_000,
+      1_000_000_000_000,
     );
+    const { rows } = await pool.query<{ spend: string }>(
+      `SELECT coalesce(sum(cost_microdollars), 0) AS spend FROM mind_calls
+       WHERE called_at >= date_trunc('month', now(), 'UTC')`,
+    );
+    const capped = {
+      dailyCalls: 300,
+      monthlySpendUsd: (Number(rows[0]!.spend) + 1) / 1_000_000,
+    };
+    expect(await usage.mayThink(tam, capped)).toBe(true);
 
-    expect(await usage.spendThisMonthMicrodollars()).toBe(
-      before + call.costMicrodollars + 1_000_000,
+    expect(await usage.reserve(pip, capped, call)).toBeDefined();
+    expect(await usage.mayThink(tam, capped)).toBe(false);
+    expect(await usage.reserve(tam, capped, call)).toBeUndefined();
+  });
+
+  it('settles a reservation with what the call used, or releases it', async () => {
+    const pip = await newPlayer();
+    const held = { ...call, costMicrodollars: 9_000 };
+    const settled = (await usage.reserve(pip, limits, held))!;
+    const released = (await usage.reserve(pip, limits, held))!;
+    expect(await costs(pip)).toEqual([9_000, 9_000]);
+
+    await usage.settle(settled, call);
+    await usage.release(released);
+    expect(await costs(pip)).toEqual([call.costMicrodollars]);
+    expect(await usage.mayThink(pip, limits)).toBe(true);
+  });
+
+  it('reserves no more calls than the limit when asked at once', async () => {
+    const pip = await newPlayer();
+    const reservations = await Promise.all(
+      Array.from({ length: 6 }, () => usage.reserve(pip, limits, call)),
     );
+    expect(reservations.filter((r) => r !== undefined)).toHaveLength(
+      limits.dailyCalls,
+    );
+    expect(await costs(pip)).toHaveLength(limits.dailyCalls);
   });
 });

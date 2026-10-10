@@ -23,9 +23,10 @@ const noWorlds: PrototypeWorldStore = {
 const noMind: MindOptions = {
   mind: { think: () => Promise.reject(new Error('no mind here')) },
   usage: {
-    callsToday: () => Promise.reject(new Error('no mind here')),
-    spendThisMonthMicrodollars: () => Promise.reject(new Error('no mind here')),
-    record: () => Promise.reject(new Error('no mind here')),
+    mayThink: () => Promise.reject(new Error('no mind here')),
+    reserve: () => Promise.reject(new Error('no mind here')),
+    settle: () => Promise.reject(new Error('no mind here')),
+    release: () => Promise.reject(new Error('no mind here')),
   },
   limits: { dailyCalls: 0, monthlySpendUsd: 0 },
 };

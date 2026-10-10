@@ -114,7 +114,10 @@ export const SCHEMA_MIGRATIONS: readonly SchemaMigration[] = [
     sql: `
       -- One row per Claude call made for a player's Kith, for the daily call
       -- limit and the monthly spend cap. Never the prompt or the reply.
+      -- A call is recorded before Claude is asked, holding the most it could
+      -- cost, and settled with what it used once Claude answers.
       CREATE TABLE mind_calls (
+        id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
         owner_id uuid NOT NULL REFERENCES users (id),
         called_at timestamptz NOT NULL DEFAULT now(),
         model text NOT NULL,
