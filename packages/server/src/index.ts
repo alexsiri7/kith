@@ -7,12 +7,25 @@ import Fastify, {
 import { auth, type AuthOptions } from './auth.js';
 import { clientMountPath } from './client-mount.js';
 
+/**
+ * What `prototype/build.js` writes beside the pages so the game installs as
+ * an app.
+ */
+export const appFiles = [
+  'manifest.webmanifest',
+  'sw.js',
+  'icon-192.png',
+  'icon-512.png',
+  'icon-maskable-512.png',
+  'apple-touch-icon.png',
+] as const;
+
 export interface ServerOptions {
   checkDatabase: () => Promise<unknown>;
   auth: AuthOptions;
   /**
    * The built v2.2 prototype. `/` serves its game to signed-in players and
-   * its welcome page to everyone else.
+   * its welcome page to everyone else; its `appFiles` are served to everyone.
    */
   gameDir?: string;
   /** The new client's build, served under `clientMountPath`. */
@@ -53,6 +66,9 @@ export function buildServer(options: ServerOptions): FastifyInstance {
     app.get('/', (request, reply) =>
       reply.sendFile(request.userId === null ? 'welcome.html' : 'kith.html'),
     );
+    for (const file of appFiles) {
+      app.get(`/${file}`, (_request, reply) => reply.sendFile(file));
+    }
   }
   if (options.clientDir !== undefined) {
     app.register(fastifyStatic, {

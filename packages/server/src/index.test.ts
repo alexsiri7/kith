@@ -5,7 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { clientMountPath } from './client-mount.js';
 import type { IdentityProvider } from './google.js';
-import { buildServer, type ServerOptions } from './index.js';
+import { appFiles, buildServer, type ServerOptions } from './index.js';
 
 const unusedGoogle: IdentityProvider = {
   authorizationUrl: () => 'https://google.test/auth',
@@ -125,6 +125,30 @@ describe('server', () => {
 
     const health = await server.inject({ method: 'GET', url: '/healthz' });
     expect(health.json()).toEqual({ status: 'ok' });
+  });
+
+  it('serves the installable-app files to everyone, and no other file of the game', async () => {
+    const gameDir = await staticDir('kith.html', '<p>kith-game</p>');
+    for (const file of appFiles) await writeFile(join(gameDir, file), file);
+    const server = build({ gameDir });
+
+    const types = {
+      'manifest.webmanifest': /^application\/manifest\+json/,
+      'sw.js': /^application\/javascript/,
+      'icon-192.png': /^image\/png/,
+      'icon-512.png': /^image\/png/,
+      'icon-maskable-512.png': /^image\/png/,
+      'apple-touch-icon.png': /^image\/png/,
+    } satisfies Record<(typeof appFiles)[number], RegExp>;
+    for (const [file, type] of Object.entries(types)) {
+      const res = await server.inject({ method: 'GET', url: `/${file}` });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toMatch(type);
+      expect(res.body).toBe(file);
+    }
+
+    const game = await server.inject({ method: 'GET', url: '/kith.html' });
+    expect(game.statusCode).toBe(404);
   });
 
   it('redirects the bare mount path to the client', async () => {
