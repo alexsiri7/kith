@@ -5,7 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import { clientMountPath } from './client-mount.js';
 import type { IdentityProvider } from './google.js';
-import { buildServer, type ServerOptions } from './index.js';
+import { buildServer, readAppFiles, type ServerOptions } from './index.js';
 
 const unusedGoogle: IdentityProvider = {
   authorizationUrl: () => 'https://google.test/auth',
@@ -91,17 +91,22 @@ describe('server', () => {
     expect(entries.some((entry) => entry.reqId === 'test-id')).toBe(true);
   });
 
-  async function staticDir(file: string, body: string): Promise<string> {
+  async function staticDir(files: Record<string, string>): Promise<string> {
     const dir = await mkdtemp(join(tmpdir(), 'kith-static-'));
     dirs.push(dir);
-    await writeFile(join(dir, file), body);
+    for (const [file, body] of Object.entries(files)) {
+      await writeFile(join(dir, file), body);
+    }
     return dir;
   }
 
   it('serves the welcome page at / and the client at its mount', async () => {
     const server = build({
-      gameDir: await staticDir('welcome.html', '<p>kith-welcome</p>'),
-      clientDir: await staticDir('index.html', '<p>kith-client</p>'),
+      gameDir: await staticDir({
+        'welcome.html': '<p>kith-welcome</p>',
+        'app-files.json': '[]',
+      }),
+      clientDir: await staticDir({ 'index.html': '<p>kith-client</p>' }),
     });
 
     const welcome = await server.inject({ method: 'GET', url: '/' });
@@ -127,9 +132,43 @@ describe('server', () => {
     expect(health.json()).toEqual({ status: 'ok' });
   });
 
+  it('serves the installable-app files the build lists to everyone, and no other file of the game', async () => {
+    const types = {
+      'manifest.webmanifest': /^application\/manifest\+json/,
+      'sw.js': /^application\/javascript/,
+      'icon-192.png': /^image\/png/,
+    };
+    const server = build({
+      gameDir: await staticDir({
+        ...Object.fromEntries(Object.keys(types).map((file) => [file, file])),
+        'kith.html': '<p>kith-game</p>',
+        'app-files.json': JSON.stringify(Object.keys(types)),
+      }),
+    });
+
+    for (const [file, type] of Object.entries(types)) {
+      const res = await server.inject({ method: 'GET', url: `/${file}` });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toMatch(type);
+      expect(res.body).toBe(file);
+    }
+    for (const file of ['kith.html', 'app-files.json']) {
+      const res = await server.inject({ method: 'GET', url: `/${file}` });
+      expect(res.statusCode, file).toBe(404);
+    }
+  });
+
+  it('refuses a game build whose app-files.json names a path', async () => {
+    const gameDir = await staticDir({
+      'app-files.json': JSON.stringify(['../secret.txt']),
+    });
+    expect(() => readAppFiles(gameDir)).toThrow(/not a list of file names/);
+    expect(() => build({ gameDir })).toThrow(/not a list of file names/);
+  });
+
   it('redirects the bare mount path to the client', async () => {
     const res = await build({
-      clientDir: await staticDir('index.html', '<p>kith-client</p>'),
+      clientDir: await staticDir({ 'index.html': '<p>kith-client</p>' }),
     }).inject({ method: 'GET', url: clientMountPath });
     expect(res.statusCode).toBe(301);
     expect(res.headers.location).toBe(`${clientMountPath}/`);

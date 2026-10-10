@@ -16,7 +16,7 @@ A pnpm-workspace TypeScript monorepo.
 | `requirements/`       | Product requirements.                                                                                                                                                                         |
 | `tests/`              | Repository-level tests (e.g. the determinism lint rule).                                                                                                                                      |
 
-Shared compiler settings live in `tsconfig.base.json` (strict mode everywhere). Workspace packages import each other's TypeScript sources directly during typechecking, tests and Vite builds via the `@kith/source` export condition; `pnpm build` compiles each package to `dist/` in dependency order, then inlines the prototype into `prototype/dist/kith.html` and its sign-in card into `prototype/dist/welcome.html`.
+Shared compiler settings live in `tsconfig.base.json` (strict mode everywhere). Workspace packages import each other's TypeScript sources directly during typechecking, tests and Vite builds via the `@kith/source` export condition; `pnpm build` compiles each package to `dist/` in dependency order, then inlines the prototype into `prototype/dist/kith.html` and its sign-in card into `prototype/dist/welcome.html`, and writes beside them the files that make the game installable on a phone: its web app manifest, icons and service worker.
 
 ## Commands
 
@@ -58,7 +58,7 @@ Production runs on Railway at <https://kith.interstellarai.net>, declared in `.r
 
 `GET /healthz` answers as long as the process is up; `GET /readyz` answers 200 only while Postgres responds to `SELECT 1` and 503 otherwise (Railway's deploy healthcheck, see [Operations](docs/operations.md)). Logs are JSON lines; each request carries an `x-request-id` (taken from the incoming header or generated) that appears as `reqId` in its log lines and is echoed in the response.
 
-The server also serves static files: the playable v2.2 prototype (`prototype/dist/kith.html`) at `/` to signed-in players (see [Sign-in](#sign-in)), and the new client's Vite build (`packages/client/dist`, built with base `/next/`) at `/next/` while it is being built. One Railway service therefore serves both the app and the API from one origin: one deploy, no CORS or cross-site cookies, and the client always ships with the server version that runs the same engine. A separate static deploy was rejected for adding a second pipeline and allowing client/server version skew for no benefit at this stage.
+The server also serves static files: the playable v2.2 prototype (`prototype/dist/kith.html`) at `/` to signed-in players (see [Sign-in](#sign-in)), the manifest, icons and service worker that let it be added to a home screen and opened offline (the service worker keeps only the last page served at `/`; `/api/` and everything else always go to the network), and the new client's Vite build (`packages/client/dist`, built with base `/next/`) at `/next/` while it is being built. One Railway service therefore serves both the app and the API from one origin: one deploy, no CORS or cross-site cookies, and the client always ships with the server version that runs the same engine. A separate static deploy was rejected for adding a second pipeline and allowing client/server version skew for no benefit at this stage.
 
 ### Sign-in
 

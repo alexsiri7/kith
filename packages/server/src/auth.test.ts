@@ -92,6 +92,7 @@ describe('Google sign-in', () => {
     gameDir = await mkdtemp(join(tmpdir(), 'kith-game-'));
     await writeFile(join(gameDir, 'kith.html'), '<p>kith-game</p>');
     await writeFile(join(gameDir, 'welcome.html'), '<p>kith-welcome</p>');
+    await writeFile(join(gameDir, 'app-files.json'), '[]');
     google = fakeGoogle();
     users = new MemoryUserStore();
     app = buildServer({

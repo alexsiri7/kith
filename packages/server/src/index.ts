@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import fastifyStatic from '@fastify/static';
 import Fastify, {
   type FastifyInstance,
@@ -7,12 +9,33 @@ import Fastify, {
 import { auth, type AuthOptions } from './auth.js';
 import { clientMountPath } from './client-mount.js';
 
+/**
+ * The files `prototype/build.js` writes beside the pages so the game installs
+ * as an app, as it lists them in the build's `app-files.json`.
+ */
+export function readAppFiles(gameDir: string): string[] {
+  const files: unknown = JSON.parse(
+    readFileSync(join(gameDir, 'app-files.json'), 'utf8'),
+  );
+  if (
+    !Array.isArray(files) ||
+    !files.every(
+      (file): file is string =>
+        typeof file === 'string' && /^[\w.-]+$/.test(file),
+    )
+  ) {
+    throw new Error(`${gameDir}/app-files.json is not a list of file names`);
+  }
+  return files;
+}
+
 export interface ServerOptions {
   checkDatabase: () => Promise<unknown>;
   auth: AuthOptions;
   /**
    * The built v2.2 prototype. `/` serves its game to signed-in players and
-   * its welcome page to everyone else.
+   * its welcome page to everyone else; the files its `app-files.json` lists are
+   * served to everyone.
    */
   gameDir?: string;
   /** The new client's build, served under `clientMountPath`. */
@@ -53,6 +76,9 @@ export function buildServer(options: ServerOptions): FastifyInstance {
     app.get('/', (request, reply) =>
       reply.sendFile(request.userId === null ? 'welcome.html' : 'kith.html'),
     );
+    for (const file of readAppFiles(options.gameDir)) {
+      app.get(`/${file}`, (_request, reply) => reply.sendFile(file));
+    }
   }
   if (options.clientDir !== undefined) {
     app.register(fastifyStatic, {
