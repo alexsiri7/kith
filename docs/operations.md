@@ -1,11 +1,12 @@
 # Operations
 
-Kith runs on Railway: project `kith`, environment `production`, region `europe-west4-drams3a`. Everything about it except secret values and backup schedules is declared in [`.railway/railway.ts`](../.railway/railway.ts):
+Kith runs on Railway: project `kith`, environment `production`, region `europe-west4-drams3a`. Everything about it except secret values is declared in [`.railway/railway.ts`](../.railway/railway.ts):
 
-| Resource  | What it is                                                                                                                                                                                                            |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kith`    | The server (and the client it serves), built from the `Dockerfile` on `alexsiri7/kith` `main`. Health check `GET /readyz` (60 s), restarted on failure. Custom domain `kith.interstellarai.net`, routed to port 3000. |
-| `kith-db` | Railway Postgres. Its `DATABASE_URL` (private network) is wired into `kith` as a variable reference, so it is never copied anywhere.                                                                                  |
+| Resource | What it is                                                                                                                                                                                                            |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kith`   | The server (and the client it serves), built from the `Dockerfile` on `alexsiri7/kith` `main`. Health check `GET /readyz` (60 s), restarted on failure. Custom domain `kith.interstellarai.net`, routed to port 3000. |
+
+Its database is not on Railway: see [Database](#database).
 
 ## Changing the infrastructure
 
@@ -18,7 +19,7 @@ railway config plan     # review the diff
 railway config apply
 ```
 
-The first `apply` creates the project, the service, the database and the custom domain.
+The first `apply` creates the project, the service and the custom domain.
 
 ## Variables
 
@@ -26,7 +27,7 @@ The first `apply` creates the project, the service, the database and the custom 
 | ------------------------ | -------------------------------------------------------------- |
 | `PORT`                   | `railway.ts` (`3000`, the port the custom domain routes to).   |
 | `APP_ORIGIN`             | `railway.ts` (`https://kith.interstellarai.net`).              |
-| `DATABASE_URL`           | `railway.ts`, as a reference to `kith-db`'s `DATABASE_URL`.    |
+| `DATABASE_URL`           | Railway dashboard only. See [Database](#database).             |
 | `LLM_API_KEY`            | Railway dashboard only. The Requesty key.                      |
 | `LLM_MODEL`              | Unset (defaults to Claude Haiku 4.5); set in `railway.ts`.     |
 | `MIND_DAILY_CALLS`       | Unset (defaults to 300). Set in `railway.ts` to change it.     |
@@ -61,16 +62,31 @@ To check a deploy: `https://kith.interstellarai.net/healthz` answers 200 while t
 
 In the `kith` service's **Deployments** tab, open the last good deploy and choose **Redeploy**. It goes through the same health check. Then revert the bad commit on `main`, or the next push deploys it again.
 
-## Backups
+## Database
 
-Backups of `kith-db` are a schedule on its volume and are not part of `railway.ts`. After the first `apply`, open `kith-db` → **Backups** and enable the **Daily** schedule. Railway keeps each daily backup for six days.
+Kith's tables live in the shared Supabase "prod" database, which holds every project's tables. Kith keeps to a schema of its own, `kith`, and connects as a role of its own, `kith_app`, that can use that schema and nothing else: it is not `postgres`, owns no database, and is granted nothing outside `kith` beyond what every role has, so no bug or migration of Kith's can touch another project's tables.
 
-To take one by hand before a risky change (a migration you are unsure of, a manual data fix): create a manual backup in the same tab.
+- The role's `search_path` is `kith`, so Kith's SQL names its tables unqualified and they resolve there.
+- Migrations may not name any schema, change the `search_path`, or create, alter or drop a schema or database: `migrateDatabase` refuses to run one that does, and `migrations.test.ts` fails on it.
+- The pre-deploy migration refuses to run unless its connection's schema is `kith` and its role is neither a superuser nor the database's owner.
 
-### Restoring
+### Creating the schema and role
 
-A restore replaces the whole database with the backup; everything written since the backup is lost.
+Once, before the first deploy, run this in the Supabase SQL editor (as `postgres`), with a fresh password (`openssl rand -hex 32`) in place of `<password>`:
 
-1. `kith-db` → **Backups**, pick the backup, choose **Restore**. Railway stages the change.
-2. Review and **Deploy** the staged change. `kith-db` restarts on the restored volume; `kith` answers 503 on `/readyz` until it is back.
-3. Check that `https://kith.interstellarai.net/readyz` answers 200 and that the game loads a known world.
+```sql
+CREATE ROLE kith_app LOGIN PASSWORD '<password>';
+CREATE SCHEMA kith;
+GRANT USAGE, CREATE ON SCHEMA kith TO kith_app;
+ALTER ROLE kith_app SET search_path = kith;
+```
+
+`kith` belongs to `postgres`, so `kith_app` can create, change and drop its own tables in it but cannot drop the schema. CI sets up its Postgres with this same SQL, and `database.test.ts` checks that a role made with it sees nothing outside its schema.
+
+### Connecting
+
+`DATABASE_URL` is the project's **Transaction pooler** connection string (**Connect** in the Supabase dashboard; port 6543), with the user `kith_app.<project-ref>` and the password above, e.g. `postgresql://kith_app.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres`. Leave out any `sslmode`, which would replace the server's own TLS settings: on Railway (where `RAILWAY_ENVIRONMENT` is set) the server always uses TLS and verifies the database against Supabase's root CA (`packages/server/certs/supabase-root-2021-ca.crt`, valid until 2031-04-26). The transaction pooler hands each transaction to any server connection, so Kith never uses prepared (named) statements and the migrations hold their lock per transaction.
+
+### Backups
+
+Backups are Supabase's, of the whole shared database: restoring one rolls back every project in it, not just Kith, so it is no way to undo a mistake of Kith's. Before a risky change (a migration you are unsure of, a manual data fix), keep a copy of Kith's data alone with `pg_dump --schema=kith`; `pg_restore --clean --schema=kith` puts it back.

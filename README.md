@@ -33,11 +33,11 @@ pnpm e2e         # Playwright, against the built server (after pnpm build; needs
 pnpm format      # apply Prettier
 ```
 
-The Postgres integration tests (the `packages/server/src/*.test.ts` files that read `TEST_DATABASE_URL`) run only when `TEST_DATABASE_URL` points at a database they may create and drop schemas in, e.g. `TEST_DATABASE_URL=postgres://kith:kith@localhost:5432/kith pnpm test`; each run works in a fresh schema of its own. Without it they are skipped locally and fail in CI. `pnpm e2e` signs in, so it migrates and writes users and worlds to the database at `TEST_DATABASE_URL` (default `postgres://kith:kith@127.0.0.1:5432/kith`); it signs in through a fake Google (`e2e/fake-google.ts`) that Playwright starts beside the server, as a new account each time.
+The Postgres integration tests (the `packages/server/src/*.test.ts` files that read `TEST_DATABASE_URL`) run only when `TEST_DATABASE_URL` points at a database they may create and drop schemas and roles in (as a superuser), e.g. `TEST_DATABASE_URL=postgres://kith:kith@localhost:5432/kith pnpm test`; each run works in a fresh schema of its own. Without it they are skipped locally and fail in CI. `pnpm e2e` signs in, so it migrates and writes users and worlds to the database at `DATABASE_URL` (default `postgres://kith_app:kith_app@127.0.0.1:5432/kith`), which must connect as Kith's own role, set up with the SQL in [Operations](docs/operations.md#creating-the-schema-and-role) (with `kith_app` as its password for the default); it signs in through a fake Google (`e2e/fake-google.ts`) that Playwright starts beside the server, as a new account each time.
 
-CI (`.github/workflows/ci.yml`) runs install, typecheck, lint, test (against a Postgres service container) and build on every pull request and on `main`, migrates an empty database with the built server, runs the Playwright tests (`e2e/`) against the built server, and builds the Docker image and checks that it serves `/healthz`, the welcome page and the client.
+CI (`.github/workflows/ci.yml`) runs install, typecheck, lint, test (against a Postgres service container) and build on every pull request and on `main`, sets up Kith's schema and role in that Postgres as production has them, migrates the empty schema with the built server, runs the Playwright tests (`e2e/`) against the built server, and builds the Docker image and checks that it serves `/healthz`, the welcome page and the client.
 
-Production runs on Railway at <https://kith.interstellarai.net>, declared in `.railway/railway.ts`; deploys, variables, DNS, backups and restores are described in [Operations](docs/operations.md).
+Production runs on Railway at <https://kith.interstellarai.net>, declared in `.railway/railway.ts`; deploys, variables, DNS, the database and its backups are described in [Operations](docs/operations.md).
 
 ## Server
 
@@ -46,7 +46,7 @@ Production runs on Railway at <https://kith.interstellarai.net>, declared in `.r
 | Variable                 | Required | Rule                                                                                                                       |
 | ------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `PORT`                   | no       | Integer 1–65535; defaults to 3000.                                                                                         |
-| `DATABASE_URL`           | yes      | `postgres://` or `postgresql://` URL.                                                                                      |
+| `DATABASE_URL`           | yes      | `postgres://` or `postgresql://` URL, as Kith's own role (see [Operations](docs/operations.md#database)).                  |
 | `LLM_API_KEY`            | yes      | Non-empty; the Requesty key.                                                                                               |
 | `LLM_MODEL`              | no       | Requesty model as `provider/model`, one with a list price in `mind.ts`; defaults to `anthropic/claude-haiku-4-5-20251001`. |
 | `MIND_DAILY_CALLS`       | no       | Whole number; Claude calls each player's Kith may make a day (UTC); defaults to 300. 0 turns the mind off.                 |
@@ -73,7 +73,7 @@ Routes under `/api/` answer 401 without a valid session. State-changing requests
 
 ### Persistence
 
-Worlds are stored in Postgres. `packages/server/src/migrations.ts` holds the schema as an ordered list of SQL migrations; `node packages/server/dist/migrate-main.js` (which needs only `DATABASE_URL`) applies the ones not yet recorded in `schema_migrations` and runs as Railway's pre-deploy command, so the schema is current before a new version takes traffic.
+Worlds are stored in Postgres, in schema `kith` of a database shared with other projects ([Operations](docs/operations.md#database)). `packages/server/src/migrations.ts` holds the schema as an ordered list of SQL migrations, which name their tables unqualified and may not reach outside that schema; `node packages/server/dist/migrate-main.js` (which needs only `DATABASE_URL`) applies the ones not yet recorded in `schema_migrations` and runs as Railway's pre-deploy command, so the schema is current before a new version takes traffic. It refuses to run unless `DATABASE_URL`'s role resolves to schema `kith` and is neither a superuser nor the database's owner.
 
 | Table              | Holds                                                                                                          |
 | ------------------ | -------------------------------------------------------------------------------------------------------------- |
@@ -99,7 +99,7 @@ Build and run the image locally:
 ```sh
 docker build -t kith-server .
 docker run -p 3000:3000 \
-  -e DATABASE_URL=postgres://kith:kith@host.docker.internal:5432/kith \
+  -e DATABASE_URL=postgres://kith_app:kith_app@host.docker.internal:5432/kith \
   -e LLM_API_KEY=... \
   -e APP_ORIGIN=http://localhost:3000 \
   -e SESSION_SECRET=$(openssl rand -hex 32) \

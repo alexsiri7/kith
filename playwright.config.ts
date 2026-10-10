@@ -20,7 +20,8 @@ export default defineConfig({
       env: { PORT: String(googlePort), ...google },
     },
     // Serves the output of `pnpm build`. Signing in writes users to Postgres,
-    // so the database must be reachable; the API key can be a placeholder.
+    // so the database must be reachable, with Kith's role set up as
+    // docs/operations.md says; the API key can be a placeholder.
     {
       command:
         'node packages/server/dist/migrate-main.js && node packages/server/dist/main.js',
@@ -29,8 +30,8 @@ export default defineConfig({
       env: {
         PORT: String(port),
         DATABASE_URL:
-          process.env.TEST_DATABASE_URL ??
-          'postgres://kith:kith@127.0.0.1:5432/kith',
+          process.env.DATABASE_URL ??
+          'postgres://kith_app:kith_app@127.0.0.1:5432/kith',
         LLM_API_KEY: 'e2e-placeholder',
         // Keeps the game off the real Requesty API; tests that need the mind
         // answer /api/mind themselves.
