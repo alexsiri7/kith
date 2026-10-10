@@ -182,6 +182,14 @@ describe.skipIf(databaseUrl === undefined)('/api/world', () => {
     ['without a state', { version: 0 }],
     ['with a list as the state', { state: [], version: 0 }],
     ['with a state that has no Kith', { state: { simTime: 0 }, version: 0 }],
+    [
+      'with a Kith missing its fields',
+      { state: { ...savedWorld, kith: [{}] }, version: 0 },
+    ],
+    [
+      'with a state that only has Kith and a time',
+      { state: { kith: [], simTime: 0 }, version: 0 },
+    ],
     ['with a negative version', { state: savedWorld, version: -1 }],
     ['with a fractional version', { state: savedWorld, version: 1.5 }],
     ['with a version given as text', { state: savedWorld, version: '0' }],

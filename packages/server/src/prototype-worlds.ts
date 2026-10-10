@@ -1,3 +1,4 @@
+import { prototypeSave } from '@kith/content';
 import fp from 'fastify-plugin';
 import type pg from 'pg';
 
@@ -88,16 +89,12 @@ export interface WorldSave {
   version: number;
 }
 
-/** Checks the shape every prototype save has (see `newWorld` in sim.js). */
+/** Checks the version and that the state is a prototype world. */
 export function isWorldSave(body: unknown): body is WorldSave {
   if (typeof body !== 'object' || body === null) return false;
   const { state, version } = body as Record<string, unknown>;
   if (!Number.isSafeInteger(version) || (version as number) < 0) return false;
-  if (typeof state !== 'object' || state === null || Array.isArray(state)) {
-    return false;
-  }
-  const { kith, simTime } = state as Record<string, unknown>;
-  return Array.isArray(kith) && Number.isFinite(simTime);
+  return prototypeSave.safeParse(state).success;
 }
 
 /** A real save is about 50 KB; this leaves room for a long-lived garden. */
