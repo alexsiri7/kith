@@ -40,8 +40,9 @@ jobs:
       - run: pnpm build
       - name: Create Kith's schema and role with the SQL in docs/operations.md
         run: |
-          sed -n '/^```sql$/,/^```$/{//!p;}' docs/operations.md \
-            | sed 's/<password>/kith_app/' \
+          sql=$(sed -n '/^```sql$/,/^```$/{//!p;}' docs/operations.md)
+          [ -n "$sql" ] || { echo "No sql block found in docs/operations.md" >&2; exit 1; }
+          printf '%s\n' "$sql" | sed 's/<password>/kith_app/' \
             | psql -v ON_ERROR_STOP=1 "$TEST_DATABASE_URL"
       # While the database is still empty: the end-to-end tests migrate it too.
       - name: Migrate an empty database
