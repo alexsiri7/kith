@@ -31,6 +31,13 @@ describe('migration schema guard', () => {
     'SET search_path = public',
     "SELECT set_config('search_path', 'public', true)",
     "CREATE TABLE notes (id int); -- harmless\nSELECT 'it''s'; DROP TABLE public.users",
+    'GRANT ALL ON SCHEMA public TO kith_app',
+    'REVOKE ALL ON SCHEMA public FROM kith_app',
+    "COMMENT ON SCHEMA public IS 'hi'",
+    'GRANT SELECT ON ALL TABLES IN SCHEMA other_project TO kith_app',
+    'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO kith_app',
+    'GRANT CONNECT ON DATABASE postgres TO kith_app',
+    "COMMENT ON DATABASE postgres IS 'hi'",
   ])('refuses %j', (sql) => {
     expect(() =>
       assertConfinedToOwnSchema({ name: '999_escape', sql }),
@@ -43,6 +50,17 @@ describe('migration schema guard', () => {
         name: '999_commented',
         sql: `-- Never public.users: other projects own it.
           /* nor DROP SCHEMA */ CREATE TABLE notes (id int);`,
+      }),
+    ).not.toThrow();
+  });
+
+  it('ignores dots and keywords inside string literals', () => {
+    expect(() =>
+      assertConfinedToOwnSchema({
+        name: '999_strings',
+        sql: `ALTER TABLE users ADD COLUMN support_email text NOT NULL
+          DEFAULT 'help.desk@example.com';
+          COMMENT ON TABLE users IS 'Lives in schema kith, not on database postgres';`,
       }),
     ).not.toThrow();
   });

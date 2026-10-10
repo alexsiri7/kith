@@ -137,18 +137,27 @@ const migrationLockKey = 0x6b697468;
 /**
  * Throws unless `migration` stays inside the schema its connection's
  * search_path resolves to (`kith` in production): it may not name any schema,
- * change the search_path, or create, alter or drop a schema or database.
- * Strict on purpose: a table alias like `w.id` is refused too.
+ * change the search_path, or create, alter, drop, grant on or comment on a
+ * schema or database.
+ * Strict on purpose: a table alias like `w.id` is refused too. SQL built in
+ * strings at run time is beyond it; the role's grants stop that.
  */
 export function assertConfinedToOwnSchema(migration: SchemaMigration): void {
+  const stringLiteral = /'(?:[^']|'')*'/g;
   const sql = migration.sql.replace(
-    /'(?:[^']|'')*'|--[^\n]*|\/\*[\s\S]*?\*\//g,
+    new RegExp(
+      String.raw`${stringLiteral.source}|--[^\n]*|\/\*[\s\S]*?\*\/`,
+      'g',
+    ),
     (match) => (match.startsWith("'") ? match : ' '),
   );
+  // A dotted string is data (an email address), but set_config takes the
+  // search_path's name as a string.
+  const code = sql.replace(stringLiteral, "''");
   const identifier = String.raw`(?:"(?:[^"]|"")+"|[A-Za-z_][\w$]*)`;
   const problems = [
-    sql.match(new RegExp(String.raw`${identifier}\s*\.\s*${identifier}`))?.[0],
-    sql.match(/\b(?:CREATE|ALTER|DROP)\s+(?:SCHEMA|DATABASE)\b/i)?.[0],
+    code.match(new RegExp(String.raw`${identifier}\s*\.\s*${identifier}`))?.[0],
+    code.match(/\b(?:CREATE|ALTER|DROP|ON|IN)\s+(?:SCHEMA|DATABASE)\b/i)?.[0],
     sql.match(/\bsearch_path\b/i)?.[0],
   ].filter((found) => found !== undefined);
   if (problems.length > 0) {
