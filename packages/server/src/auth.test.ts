@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sessionCookie, sessionMaxAgeSeconds } from './auth.js';
 import { googleProvider, type GoogleIdentity } from './google.js';
 import { buildServer } from './index.js';
-import type { MindOptions } from './mind.js';
+import { defaultModel, type MindOptions } from './mind.js';
 import type { PrototypeWorldStore } from './prototype-worlds.js';
 import type { UserStore } from './users.js';
 
@@ -25,7 +25,7 @@ const noWorlds: PrototypeWorldStore = {
 
 const noMind: MindOptions = {
   mind: {
-    model: 'anthropic/no-mind',
+    model: defaultModel,
     think: () => Promise.reject(new Error('no mind here')),
   },
   usage: {

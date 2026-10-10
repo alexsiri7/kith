@@ -1,11 +1,16 @@
 import { googleAuthorizationUrl, googleTokenUrl } from './google.js';
-import { defaultModel, type MindLimits } from './mind.js';
+import {
+  defaultModel,
+  isPricedModel,
+  type MindLimits,
+  type PricedModel,
+} from './mind.js';
 import { resolvePort } from './port.js';
 
 export interface Config {
   port: number;
   databaseUrl: string;
-  llm: { apiKey: string; model: string };
+  llm: { apiKey: string; model: PricedModel };
   mind: MindLimits;
   sentryDsn: string | undefined;
   appOrigin: string;
@@ -60,11 +65,15 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     problems.push('DATABASE_URL must be a postgres:// or postgresql:// URL');
   }
 
-  const llmModel = env.LLM_MODEL || defaultModel;
-  if (!/^[^/\s]+\/\S+$/.test(llmModel)) {
-    problems.push(
-      `LLM_MODEL must be a Requesty model like ${defaultModel}, got "${llmModel}"`,
-    );
+  let llmModel = defaultModel;
+  if (env.LLM_MODEL !== undefined && env.LLM_MODEL !== '') {
+    if (isPricedModel(env.LLM_MODEL)) {
+      llmModel = env.LLM_MODEL;
+    } else {
+      problems.push(
+        `LLM_MODEL must be a Requesty model with a list price in mind.ts, like ${defaultModel}, got "${env.LLM_MODEL}"`,
+      );
+    }
   }
   const llm = { apiKey: required('LLM_API_KEY'), model: llmModel };
 

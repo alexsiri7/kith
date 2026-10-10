@@ -381,7 +381,7 @@ describe('requestyMind', () => {
     return { requests, fetch };
   }
 
-  const model = 'anthropic/claude-haiku-4-5-20251001';
+  const model = defaultModel;
   const reply = (usage: Record<string, unknown>) => ({
     choices: [{ message: { role: 'assistant', content: '{"say":1}' } }],
     usage,

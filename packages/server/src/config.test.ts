@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from './config.js';
+import { defaultModel } from './mind.js';
 
 const sessionSecret = 's'.repeat(32);
 const validEnv = {
@@ -33,7 +34,7 @@ describe('loadConfig', () => {
       databaseUrl: validEnv.DATABASE_URL,
       llm: {
         apiKey: validEnv.LLM_API_KEY,
-        model: 'anthropic/claude-haiku-4-5-20251001',
+        model: defaultModel,
       },
       mind: { dailyCalls: 300, monthlySpendUsd: 20 },
       sentryDsn: 'https://key@sentry.example/1',
@@ -107,17 +108,21 @@ describe('loadConfig', () => {
     });
   }
 
-  it('lets LLM_MODEL choose the model', () => {
-    expect(
-      loadConfig({ ...validEnv, LLM_MODEL: 'anthropic/claude-sonnet-5' }).llm
-        .model,
-    ).toBe('anthropic/claude-sonnet-5');
+  it('lets LLM_MODEL choose a priced model', () => {
+    expect(loadConfig({ ...validEnv, LLM_MODEL: defaultModel }).llm.model).toBe(
+      defaultModel,
+    );
   });
 
-  for (const model of ['claude-haiku-4-5', 'anthropic/', 'anthropic/a b']) {
-    it(`rejects LLM_MODEL ${JSON.stringify(model)}`, () => {
+  for (const model of [
+    'anthropic/claude-sonnet-5',
+    'claude-haiku-4-5',
+    'anthropic/',
+    'toString',
+  ]) {
+    it(`rejects LLM_MODEL ${JSON.stringify(model)}, which has no list price`, () => {
       expect(problemsFor({ ...validEnv, LLM_MODEL: model })).toContain(
-        `LLM_MODEL must be a Requesty model like anthropic/claude-haiku-4-5-20251001, got "${model}"`,
+        `LLM_MODEL must be a Requesty model with a list price in mind.ts, like ${defaultModel}, got "${model}"`,
       );
     });
   }

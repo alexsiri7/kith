@@ -9,19 +9,29 @@ function isModelTier(tier: unknown): tier is ModelTier {
   return tier === 'quick';
 }
 
-/** Claude Haiku 4.5, in Requesty's `provider/model` form. */
-export const defaultModel = 'anthropic/claude-haiku-4-5-20251001';
+// List prices in millionths of a dollar per token, by Requesty `provider/model`.
+// Calls are held at them, and settled at them when Requesty reports no cost of
+// its own, so the mind may only ask a model priced here.
+const listPrices = {
+  'anthropic/claude-haiku-4-5-20251001': { input: 1, output: 5 },
+} as const;
 
-// Claude Haiku 4.5's list price, in millionths of a dollar per token. Calls are
-// held at it, and settled at it when Requesty reports no cost of its own.
-const inputMicrodollarsPerToken = 1;
-const outputMicrodollarsPerToken = 5;
+export type PricedModel = keyof typeof listPrices;
 
-function listPrice(inputTokens: number, outputTokens: number): number {
-  return (
-    inputTokens * inputMicrodollarsPerToken +
-    outputTokens * outputMicrodollarsPerToken
-  );
+/** Claude Haiku 4.5. */
+export const defaultModel: PricedModel = 'anthropic/claude-haiku-4-5-20251001';
+
+export function isPricedModel(model: string): model is PricedModel {
+  return Object.hasOwn(listPrices, model);
+}
+
+function listPrice(
+  model: PricedModel,
+  inputTokens: number,
+  outputTokens: number,
+): number {
+  const price = listPrices[model];
+  return inputTokens * price.input + outputTokens * price.output;
 }
 
 /** What one call to Claude used, as `mind_calls` records it. */
@@ -40,7 +50,7 @@ export interface Thought {
 
 export interface Mind {
   /** The model every call asks. */
-  model: string;
+  model: PricedModel;
   /** Rejects when Claude does not answer. */
   think(prompt: string): Promise<Thought>;
 }
@@ -85,7 +95,7 @@ function replyText(choices: unknown): string {
 /** Claude through Requesty's OpenAI-compatible router, paid for by `apiKey`. */
 export function requestyMind(options: {
   apiKey: string;
-  model: string;
+  model: PricedModel;
   fetch?: typeof fetch;
 }): Mind {
   const { apiKey, model } = options;
@@ -121,7 +131,7 @@ export function requestyMind(options: {
           outputTokens,
           costMicrodollars:
             reportedCostMicrodollars(body.usage) ??
-            listPrice(inputTokens, outputTokens),
+            listPrice(model, inputTokens, outputTokens),
         },
       };
     },
@@ -132,14 +142,14 @@ export function requestyMind(options: {
  * The most a call can use: every token of a prompt is at least one byte of it,
  * plus a few to frame the message, and the reply stops at `maxReplyTokens`.
  */
-export function mostACallUses(prompt: string, model: string): MindCall {
+export function mostACallUses(prompt: string, model: PricedModel): MindCall {
   const inputTokens =
     Buffer.byteLength(system) + Buffer.byteLength(prompt) + framingTokens;
   return {
     model,
     inputTokens,
     outputTokens: maxReplyTokens,
-    costMicrodollars: listPrice(inputTokens, maxReplyTokens),
+    costMicrodollars: listPrice(model, inputTokens, maxReplyTokens),
   };
 }
 

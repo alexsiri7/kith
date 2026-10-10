@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sessionCookie } from './auth.js';
 import { buildServer } from './index.js';
 import { migrateDatabase } from './migrations.js';
-import type { MindOptions } from './mind.js';
+import { defaultModel, type MindOptions } from './mind.js';
 import {
   PgPrototypeWorldStore,
   type PrototypeState,
@@ -23,7 +23,7 @@ const day = 24 * 60 * 60 * 1000;
 
 const noMind: MindOptions = {
   mind: {
-    model: 'anthropic/no-mind',
+    model: defaultModel,
     think: () => Promise.reject(new Error('no mind here')),
   },
   usage: {
