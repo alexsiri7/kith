@@ -645,6 +645,19 @@ test('starts fresh instead of bringing the garden kept in the browser', async ({
   await expect(bring).toBeHidden();
 });
 
+test('leaves a browser garden that cannot be read where it is, without offering it', async ({
+  page,
+}) => {
+  const unreadable = '{"kith": [';
+  await gardenSaved(page);
+  await signInWithGardenKept(page, unreadable);
+  await expect(page.locator('#intro')).toBeVisible();
+  await expect(page.locator('#bring')).toBeHidden();
+  expect(await page.evaluate(() => localStorage.getItem('kith.world.v1'))).toBe(
+    unreadable,
+  );
+});
+
 test('never offers a browser garden once the player has a world on the server', async ({
   page,
 }) => {

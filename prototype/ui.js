@@ -20,9 +20,10 @@ function mark(version, dirty) { syncVersion = version; try { localStorage.setIte
 function remember(json, version, dirty) { try { if (json == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, json); } catch (e) {} mark(version, dirty); }
 function forget() { try { localStorage.removeItem(KEY); localStorage.removeItem(SYNC); } catch (e) {} }
 // The player chooses, once, whether a world this browser kept from before the server becomes theirs: kept, it is this device's unsaved changes on no world; otherwise it is forgotten.
+// A kept world that does not parse is not offered, and is left where it is rather than forgotten unasked.
 function offer(json) {
   let state = null; try { state = JSON.parse(json); } catch (e) {}
-  if (!state) { forget(); return Promise.resolve(null); }
+  if (!state) return Promise.resolve(null);
   const o = $('#bring'); o.hidden = false;
   return new Promise(resolve => {
     o.querySelector('.bring').onclick = () => { o.hidden = true; mark(0, true); resolve(state); };
