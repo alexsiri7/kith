@@ -24,6 +24,8 @@ jobs:
           --health-retries 15
     env:
       TEST_DATABASE_URL: postgres://kith:kith@localhost:5432/kith
+      # Kith's own role, which sees only schema kith, as in production.
+      DATABASE_URL: postgres://kith_app:kith_app@localhost:5432/kith
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -36,11 +38,15 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
+      - name: Create Kith's schema and role with the SQL in docs/operations.md
+        run: |
+          sql=$(sed -n '/^```sql$/,/^```$/{//!p;}' docs/operations.md)
+          [ -n "$sql" ] || { echo "No sql block found in docs/operations.md" >&2; exit 1; }
+          printf '%s\n' "$sql" | sed 's/<password>/kith_app/' \
+            | psql -v ON_ERROR_STOP=1 "$TEST_DATABASE_URL"
       # While the database is still empty: the end-to-end tests migrate it too.
       - name: Migrate an empty database
         run: node packages/server/dist/migrate-main.js
-        env:
-          DATABASE_URL: postgres://kith:kith@localhost:5432/kith
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm e2e
 

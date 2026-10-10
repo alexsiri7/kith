@@ -5,6 +5,7 @@ import '@kith/content';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { loadConfig } from './config.js';
+import { poolConfig } from './database.js';
 import { googleProvider } from './google.js';
 import { buildServer } from './index.js';
 import { PgMindUsage, requestyMind } from './mind.js';
@@ -12,10 +13,7 @@ import { PgPrototypeWorldStore } from './prototype-worlds.js';
 import { PgUserStore } from './users.js';
 
 const config = loadConfig(process.env);
-const pool = new pg.Pool({
-  connectionString: config.databaseUrl,
-  connectionTimeoutMillis: 5_000,
-});
+const pool = new pg.Pool(poolConfig(config.databaseUrl, process.env));
 const app = buildServer({
   checkDatabase: () => pool.query('SELECT 1'),
   auth: {

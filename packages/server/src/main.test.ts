@@ -19,6 +19,7 @@ describe('server entrypoint', () => {
     addHook: vi.fn(),
   }));
   const query = vi.fn();
+  const poolConfigs: unknown[] = [];
 
   beforeEach(() => {
     vi.doMock('./index.js', () => ({ buildServer }));
@@ -27,6 +28,9 @@ describe('server entrypoint', () => {
         Pool: class {
           query = query;
           end = vi.fn();
+          constructor(config: unknown) {
+            poolConfigs.push(config);
+          }
         },
       },
     }));
@@ -43,6 +47,7 @@ describe('server entrypoint', () => {
     listen.mockReset();
     buildServer.mockClear();
     query.mockReset();
+    poolConfigs.length = 0;
   });
 
   it('listens on PORT on all interfaces', async () => {
@@ -102,6 +107,19 @@ describe('server entrypoint', () => {
     const failure = new Error('connection refused');
     query.mockRejectedValueOnce(failure);
     await expect(checkDatabase()).rejects.toBe(failure);
+  });
+
+  it('connects to DATABASE_URL over TLS verified against Supabase on Railway', async () => {
+    vi.stubEnv('RAILWAY_ENVIRONMENT', 'production');
+
+    await import('./main.js');
+
+    expect(poolConfigs).toEqual([
+      expect.objectContaining({
+        connectionString: validEnv.DATABASE_URL,
+        ssl: { ca: expect.stringContaining('-----BEGIN CERTIFICATE-----') },
+      }),
+    ]);
   });
 
   for (const port of ['', 'abc', '-1', '0', '3.5', '65536']) {

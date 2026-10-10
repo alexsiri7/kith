@@ -135,35 +135,59 @@ export const SCHEMA_MIGRATIONS: readonly SchemaMigration[] = [
 const migrationLockKey = 0x6b697468;
 
 /**
+ * Throws unless `migration` stays inside the schema its connection's
+ * search_path resolves to (`kith` in production): it may not name any schema,
+ * change the search_path, or create, alter, drop, grant on or comment on a
+ * schema or database.
+ * Strict on purpose: a table alias like `w.id` is refused too. SQL built in
+ * strings at run time is beyond it; the role's grants stop that.
+ */
+export function assertConfinedToOwnSchema(migration: SchemaMigration): void {
+  const stringLiteral = /'(?:[^']|'')*'/g;
+  const sql = migration.sql.replace(
+    new RegExp(
+      String.raw`${stringLiteral.source}|--[^\n]*|\/\*[\s\S]*?\*\/`,
+      'g',
+    ),
+    (match) => (match.startsWith("'") ? match : ' '),
+  );
+  // A dotted string is data (an email address), but set_config takes the
+  // search_path's name as a string.
+  const code = sql.replace(stringLiteral, "''");
+  const identifier = String.raw`(?:"(?:[^"]|"")+"|[A-Za-z_][\w$]*)`;
+  const problems = [
+    code.match(new RegExp(String.raw`${identifier}\s*\.\s*${identifier}`))?.[0],
+    code.match(/\b(?:CREATE|ALTER|DROP|ON|IN)\s+(?:SCHEMA|DATABASE)\b/i)?.[0],
+    sql.match(/\bsearch_path\b/i)?.[0],
+  ].filter((found) => found !== undefined);
+  if (problems.length > 0) {
+    throw new Error(
+      `Migration ${migration.name} reaches outside its schema: ${problems.map((p) => `"${p}"`).join(', ')}. Name objects unqualified; the role's search_path puts them in schema kith.`,
+    );
+  }
+}
+
+/**
  * Applies the migrations not yet recorded in `schema_migrations`, each in its
- * own transaction, and returns their names. Concurrent callers wait on an
- * advisory lock, so two deploys never apply the same migration.
+ * own transaction, and returns their names. Refuses to start if any migration
+ * reaches outside its schema. Each transaction holds an advisory lock, so two
+ * deploys never apply the same migration; the lock is transaction-scoped
+ * because a transaction pooler gives no session to hold it across.
  */
 export async function migrateDatabase(
   pool: pg.Pool,
   migrations: readonly SchemaMigration[] = SCHEMA_MIGRATIONS,
 ): Promise<string[]> {
+  migrations.forEach(assertConfinedToOwnSchema);
   const client = await pool.connect();
   try {
-    await client.query('SELECT pg_advisory_lock($1)', [migrationLockKey]);
-    await client.query(
-      `CREATE TABLE IF NOT EXISTS schema_migrations (
-        name text PRIMARY KEY,
-        applied_at timestamptz NOT NULL DEFAULT now()
-      )`,
-    );
-    const { rows } = await client.query<{ name: string }>(
-      'SELECT name FROM schema_migrations',
-    );
-    const applied = new Set(rows.map((row) => row.name));
-    const pending = migrations.filter((m) => !applied.has(m.name));
-    for (const migration of pending) {
+    const applied: string[] = [];
+    for (const migration of migrations) {
       await client.query('BEGIN');
       try {
-        await client.query(migration.sql);
-        await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [
-          migration.name,
-        ]);
+        if (await applyIfPending(client, migration)) {
+          applied.push(migration.name);
+        }
         await client.query('COMMIT');
       } catch (error) {
         await client.query('ROLLBACK');
@@ -172,10 +196,31 @@ export async function migrateDatabase(
         });
       }
     }
-    return pending.map((m) => m.name);
+    return applied;
   } finally {
-    await client
-      .query('SELECT pg_advisory_unlock($1)', [migrationLockKey])
-      .finally(() => client.release());
+    client.release();
   }
+}
+
+async function applyIfPending(
+  client: pg.PoolClient,
+  migration: SchemaMigration,
+): Promise<boolean> {
+  await client.query('SELECT pg_advisory_xact_lock($1)', [migrationLockKey]);
+  await client.query(
+    `CREATE TABLE IF NOT EXISTS schema_migrations (
+      name text PRIMARY KEY,
+      applied_at timestamptz NOT NULL DEFAULT now()
+    )`,
+  );
+  const { rowCount } = await client.query(
+    'SELECT 1 FROM schema_migrations WHERE name = $1',
+    [migration.name],
+  );
+  if (rowCount !== 0) return false;
+  await client.query(migration.sql);
+  await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [
+    migration.name,
+  ]);
+  return true;
 }

@@ -6,22 +6,13 @@
 // Secrets are preserve()d so apply keeps the values Railway already holds;
 // never put their values here. When you add a variable in the dashboard, add
 // its preserve() line here too.
-import {
-  defineRailway,
-  github,
-  postgres,
-  preserve,
-  project,
-  service,
-} from 'railway/iac';
+import { defineRailway, github, preserve, project, service } from 'railway/iac';
 
 const domain = 'kith.interstellarai.net';
 const port = 3000;
 const region = 'europe-west4-drams3a';
 
 export default defineRailway(() => {
-  const db = postgres('kith-db', { region });
-
   const kith = service('kith', {
     // checkSuites: a push to main deploys only after its GitHub checks pass.
     source: github('alexsiri7/kith', { branch: 'main', checkSuites: true }),
@@ -37,7 +28,8 @@ export default defineRailway(() => {
     env: {
       PORT: String(port),
       APP_ORIGIN: `https://${domain}`,
-      DATABASE_URL: db.env.DATABASE_URL,
+      // The shared Supabase database, as Kith's own role: docs/operations.md.
+      DATABASE_URL: preserve(),
       LLM_API_KEY: preserve(),
       SESSION_SECRET: preserve(),
       SENTRY_DSN: preserve(),
@@ -46,5 +38,5 @@ export default defineRailway(() => {
     },
   });
 
-  return project('kith', { resources: [db, kith] });
+  return project('kith', { resources: [kith] });
 });
