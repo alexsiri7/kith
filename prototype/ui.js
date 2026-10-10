@@ -14,15 +14,28 @@ const canvas = $('#world'), g = canvas.getContext('2d');
 const H = 440;
 
 // The server keeps the world; localStorage (KEY) caches it for offline play, and SYNC holds the server version the cache is based on and whether it has changes the server lacks.
-// A cached world without SYNC predates the server, so it counts as unsaved changes on no world.
-function cached() { try { const json = localStorage.getItem(KEY), sync = JSON.parse(localStorage.getItem(SYNC)); return { json, version: sync ? sync.version : 0, dirty: sync ? sync.dirty : json != null }; } catch (e) { return { json: null, version: 0, dirty: false }; } }
+// A cached world without SYNC predates the server (legacy), so it counts as unsaved changes on no world.
+function cached() { try { const json = localStorage.getItem(KEY), sync = JSON.parse(localStorage.getItem(SYNC)); return { json, version: sync ? sync.version : 0, dirty: sync ? sync.dirty : json != null, legacy: !sync && json != null }; } catch (e) { return { json: null, version: 0, dirty: false, legacy: false }; } }
 function mark(version, dirty) { syncVersion = version; try { localStorage.setItem(SYNC, JSON.stringify({ version, dirty })); } catch (e) {} }
 function remember(json, version, dirty) { try { if (json == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, json); } catch (e) {} mark(version, dirty); }
 function forget() { try { localStorage.removeItem(KEY); localStorage.removeItem(SYNC); } catch (e) {} }
+// The player chooses, once, whether a world this browser kept from before the server becomes theirs: kept, it is this device's unsaved changes on no world; otherwise it is forgotten.
+// A kept world that does not parse is not offered, and is left where it is rather than forgotten unasked.
+function offer(json) {
+  let state = null; try { state = JSON.parse(json); } catch (e) {}
+  if (!state) return Promise.resolve(null);
+  const o = $('#bring'); o.hidden = false;
+  return new Promise(resolve => {
+    o.querySelector('.bring').onclick = () => { o.hidden = true; mark(0, true); resolve(state); };
+    o.querySelector('.fresh').onclick = () => { o.hidden = true; forget(); resolve(null); };
+  });
+}
 async function load() {
   const c = cached(); let res = null, body = null;
   try { res = await fetch('/api/world', { cache: 'no-store' }); body = await res.json(); } catch (e) { res = null; }
   if (res && res.status === 401) { location.reload(); return new Promise(() => {}); }
+  // Version 0 means the player has never had a world on the server.
+  if (res && res.status === 404 && body.version === 0 && c.legacy) return offer(c.json);
   // Unsaved changes on top of the server's current version are kept, to upload on the next save; otherwise the server's world wins.
   if (res && (res.ok || res.status === 404) && !(c.dirty && c.version === body.version)) { const state = res.ok ? body.state : null; remember(state && JSON.stringify(state), body.version, false); return state; }
   syncVersion = c.version; try { return c.json ? JSON.parse(c.json) : null; } catch (e) { return null; }
