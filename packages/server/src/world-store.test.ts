@@ -92,7 +92,10 @@ describe.skipIf(databaseUrl === undefined)('Postgres persistence', () => {
         migrateDatabase(pool),
         migrateDatabase(pool),
       ]);
-      expect(runs.flat()).toEqual(SCHEMA_MIGRATIONS.map((m) => m.name));
+      // Two runs interleave migration by migration; each is applied once.
+      expect(runs.flat().sort()).toEqual(
+        SCHEMA_MIGRATIONS.map((m) => m.name).sort(),
+      );
       expect(await tableNames()).toEqual([
         'commands',
         'dreams',
