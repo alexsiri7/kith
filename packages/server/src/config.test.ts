@@ -32,6 +32,7 @@ describe('loadConfig', () => {
       port: 8080,
       databaseUrl: validEnv.DATABASE_URL,
       anthropicApiKey: validEnv.ANTHROPIC_API_KEY,
+      mind: { dailyCalls: 300, monthlySpendUsd: 20 },
       sentryDsn: 'https://key@sentry.example/1',
       appOrigin: 'https://kith.example',
       sessionSecret,
@@ -74,6 +75,34 @@ describe('loadConfig', () => {
       undefined,
     );
   });
+
+  it("takes the mind's limits from MIND_DAILY_CALLS and MIND_MONTHLY_SPEND_USD", () => {
+    expect(
+      loadConfig({
+        ...validEnv,
+        MIND_DAILY_CALLS: '0',
+        MIND_MONTHLY_SPEND_USD: '12.5',
+      }).mind,
+    ).toEqual({ dailyCalls: 0, monthlySpendUsd: 12.5 });
+  });
+
+  for (const value of ['-1', '2.5', 'abc', ' 3', '1e3']) {
+    it(`rejects MIND_DAILY_CALLS ${JSON.stringify(value)}`, () => {
+      expect(problemsFor({ ...validEnv, MIND_DAILY_CALLS: value })).toContain(
+        `MIND_DAILY_CALLS must be a whole number of calls, got "${value}"`,
+      );
+    });
+  }
+
+  for (const value of ['-1', '$20', 'abc', 'Infinity']) {
+    it(`rejects MIND_MONTHLY_SPEND_USD ${JSON.stringify(value)}`, () => {
+      expect(
+        problemsFor({ ...validEnv, MIND_MONTHLY_SPEND_USD: value }),
+      ).toContain(
+        `MIND_MONTHLY_SPEND_USD must be an amount in US dollars, got "${value}"`,
+      );
+    });
+  }
 
   it('accepts postgresql:// database URLs', () => {
     const databaseUrl = 'postgresql://kith@db.internal/kith';

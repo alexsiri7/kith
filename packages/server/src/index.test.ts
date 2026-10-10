@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { clientMountPath } from './client-mount.js';
 import type { IdentityProvider } from './google.js';
 import { buildServer, readAppFiles, type ServerOptions } from './index.js';
+import type { MindOptions } from './mind.js';
 import type { PrototypeWorldStore } from './prototype-worlds.js';
 
 const unusedGoogle: IdentityProvider = {
@@ -17,6 +18,16 @@ const noWorlds: PrototypeWorldStore = {
   load: () => Promise.reject(new Error('no worlds here')),
   save: () => Promise.reject(new Error('no worlds here')),
   erase: () => Promise.reject(new Error('no worlds here')),
+};
+
+const noMind: MindOptions = {
+  mind: { think: () => Promise.reject(new Error('no mind here')) },
+  usage: {
+    callsToday: () => Promise.reject(new Error('no mind here')),
+    spendThisMonthMicrodollars: () => Promise.reject(new Error('no mind here')),
+    record: () => Promise.reject(new Error('no mind here')),
+  },
+  limits: { dailyCalls: 0, monthlySpendUsd: 0 },
 };
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -42,6 +53,7 @@ describe('server', () => {
         users: { signIn: () => Promise.reject(new Error('no users here')) },
       },
       worlds: noWorlds,
+      mind: noMind,
       ...options,
     });
     return app;

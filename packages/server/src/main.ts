@@ -7,6 +7,7 @@ import pg from 'pg';
 import { loadConfig } from './config.js';
 import { googleProvider } from './google.js';
 import { buildServer } from './index.js';
+import { anthropicMind, PgMindUsage } from './mind.js';
 import { PgPrototypeWorldStore } from './prototype-worlds.js';
 import { PgUserStore } from './users.js';
 
@@ -24,6 +25,11 @@ const app = buildServer({
     users: new PgUserStore(pool),
   },
   worlds: new PgPrototypeWorldStore(pool),
+  mind: {
+    mind: anthropicMind({ apiKey: config.anthropicApiKey }),
+    usage: new PgMindUsage(pool),
+    limits: config.mind,
+  },
   // Same relative paths from src/ (tests) and dist/ (image).
   gameDir: fileURLToPath(new URL('../../../prototype/dist/', import.meta.url)),
   clientDir: fileURLToPath(new URL('../../client/dist/', import.meta.url)),

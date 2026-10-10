@@ -43,18 +43,20 @@ Production runs on Railway at <https://kith.interstellarai.net>, declared in `.r
 
 `packages/server` validates its environment at startup and refuses to start, listing every problem, if any of it is invalid:
 
-| Variable               | Required | Rule                                                                   |
-| ---------------------- | -------- | ---------------------------------------------------------------------- |
-| `PORT`                 | no       | Integer 1–65535; defaults to 3000.                                     |
-| `DATABASE_URL`         | yes      | `postgres://` or `postgresql://` URL.                                  |
-| `ANTHROPIC_API_KEY`    | yes      | Non-empty.                                                             |
-| `SENTRY_DSN`           | no       | URL.                                                                   |
-| `APP_ORIGIN`           | yes      | Public origin, e.g. `https://kith.example` (no path).                  |
-| `SESSION_SECRET`       | yes      | At least 32 characters.                                                |
-| `GOOGLE_CLIENT_ID`     | yes      | The Google OAuth client's id.                                          |
-| `GOOGLE_CLIENT_SECRET` | yes      | The Google OAuth client's secret.                                      |
-| `GOOGLE_AUTH_URL`      | no       | URL; replaces Google's authorization endpoint (end-to-end tests only). |
-| `GOOGLE_TOKEN_URL`     | no       | URL; replaces Google's token endpoint (end-to-end tests only).         |
+| Variable                 | Required | Rule                                                                                                       |
+| ------------------------ | -------- | ---------------------------------------------------------------------------------------------------------- |
+| `PORT`                   | no       | Integer 1–65535; defaults to 3000.                                                                         |
+| `DATABASE_URL`           | yes      | `postgres://` or `postgresql://` URL.                                                                      |
+| `ANTHROPIC_API_KEY`      | yes      | Non-empty.                                                                                                 |
+| `MIND_DAILY_CALLS`       | no       | Whole number; Claude calls each player's Kith may make a day (UTC); defaults to 300. 0 turns the mind off. |
+| `MIND_MONTHLY_SPEND_USD` | no       | Amount in US dollars all players' Claude calls may cost a month (UTC); defaults to 20.                     |
+| `SENTRY_DSN`             | no       | URL.                                                                                                       |
+| `APP_ORIGIN`             | yes      | Public origin, e.g. `https://kith.example` (no path).                                                      |
+| `SESSION_SECRET`         | yes      | At least 32 characters.                                                                                    |
+| `GOOGLE_CLIENT_ID`       | yes      | The Google OAuth client's id.                                                                              |
+| `GOOGLE_CLIENT_SECRET`   | yes      | The Google OAuth client's secret.                                                                          |
+| `GOOGLE_AUTH_URL`        | no       | URL; replaces Google's authorization endpoint (end-to-end tests only).                                     |
+| `GOOGLE_TOKEN_URL`       | no       | URL; replaces Google's token endpoint (end-to-end tests only).                                             |
 
 `GET /healthz` answers as long as the process is up; `GET /readyz` answers 200 only while Postgres responds to `SELECT 1` and 503 otherwise (Railway's deploy healthcheck, see [Operations](docs/operations.md)). Logs are JSON lines; each request carries an `x-request-id` (taken from the incoming header or generated) that appears as `reqId` in its log lines and is echoed in the response.
 
@@ -81,10 +83,15 @@ Worlds are stored in Postgres. `packages/server/src/migrations.ts` holds the sch
 | `moments`/`dreams` | The memory book: every moment and dream a world has held, kept forever even after the world itself drops them. |
 | `commands`         | Every player command received, numbered per world, for replay and debugging.                                   |
 | `prototype_worlds` | The live v2.2 game's world, one per player, as the game saves it; replaced by `worlds` at the engine cutover.  |
+| `mind_calls`       | One row per Claude call made for a player's Kith: model, tokens and cost, never the prompt or the reply.       |
 
 `PgWorldStore` (`packages/server/src/world-store.ts`) implements the `WorldStore` interface. `save(worldId, baseVersion, world, events)` writes the next version only if the stored version is still `baseVersion` and throws `WorldVersionConflict` otherwise, so two writers never silently overwrite each other. Loaded snapshots go through the engine's save migrations and validation. `pruneEvents(now)` implements the event retention — routine events older than 30 days are deleted — but nothing calls it yet: until a scheduler does, `world_events` grows without bound.
 
 The live game saves through `/api/world` (`packages/server/src/prototype-worlds.ts`). `GET` returns the signed-in player's `{ state, version }`, or 404 with the `version` when they have none. `PUT` takes `{ state, version }` of at most 2 MiB and saves it as the next version only if `version` is still the stored one (0 for a first save); otherwise it answers 409 with the stored `{ state, version }`, and the game reloads that world with the toast "Updated from your other device". `DELETE` is Start over: it forgets the world but keeps counting versions, so a device still holding the old world can't save it back. The game keeps its world in `localStorage` too, so it opens and plays offline and uploads the changes on its next save once the server is reachable again.
+
+### The Kith's mind
+
+Inside claude.ai the game thinks with the artifact runtime's `sample`; everywhere else it uses the server's `/api/mind` (`packages/server/src/mind.ts`), which asks Claude with `ANTHROPIC_API_KEY`. `GET` answers `{ available }`: whether the player is still within `MIND_DAILY_CALLS` and every player's calls together within `MIND_MONTHLY_SPEND_USD`. The game reads it on opening, and its footer says "Mind: Claude" or "Mind: simple". `POST` takes `{ prompt, modelTier: "quick" }` (Claude Haiku 4.5) and answers the JSON object Claude replied with. Past either limit it answers 429, and when Claude fails 502, both with `code: "not_granted"`, on which the game thinks with its own rules until it is next opened; a reply without JSON answers 502 with `code: "bad_reply"`, which only that one thought does without. Each call is logged (`mind call`) and recorded in `mind_calls` with its player, tokens and cost at Anthropic's list price, never with its text.
 
 Build and run the image locally:
 
