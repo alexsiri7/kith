@@ -1,6 +1,7 @@
+import { fileURLToPath } from 'node:url';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { clientMountPath } from '../packages/server/src/client-mount.js';
-import { appFiles } from '../packages/server/src/index.js';
+import { readAppFiles } from '../packages/server/src/index.js';
 
 interface DrawnEgg {
   x: number;
@@ -376,6 +377,8 @@ for (const viewport of viewports) {
 
 interface Manifest {
   name: string;
+  theme_color: string;
+  background_color: string;
   icons: { src: string; sizes: string; purpose?: string }[];
 }
 
@@ -419,13 +422,34 @@ async function expectInstallable(page: Page): Promise<void> {
     .locator('link[rel="apple-touch-icon"]')
     .getAttribute('href');
   expect(await decoded([touchIcon!])).toEqual(['180x180']);
+
+  const pageBackground = () =>
+    page.evaluate(() =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue('--bg')
+        .trim(),
+    );
+  const themeColor = (media: string) =>
+    page.locator(`meta[name="theme-color"]${media}`).getAttribute('content');
+  const light = await pageBackground();
+  expect(light).toMatch(/^#[0-9a-f]{6}$/);
+  expect(manifest.theme_color).toBe(light);
+  expect(manifest.background_color).toBe(light);
+  expect(await themeColor(':not([media])')).toBe(light);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  const dark = await pageBackground();
+  await page.emulateMedia({ colorScheme: 'light' });
+  expect(dark).toMatch(/^#[0-9a-f]{6}$/);
+  expect(dark).not.toBe(light);
+  expect(await themeColor('[media="(prefers-color-scheme: dark)"]')).toBe(dark);
 }
 
 test('can be installed as an app from the welcome page and the game', async ({
   page,
   request,
 }) => {
-  for (const file of appFiles) {
+  const gameDir = fileURLToPath(new URL('../prototype/dist/', import.meta.url));
+  for (const file of readAppFiles(gameDir)) {
     expect((await request.get(`/${file}`)).ok(), file).toBe(true);
   }
   await page.goto('/');
