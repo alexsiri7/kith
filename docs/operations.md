@@ -89,4 +89,4 @@ ALTER ROLE kith_app SET search_path = kith;
 
 ### Backups
 
-Backups are Supabase's, of the whole shared database: restoring one rolls back every project in it, not just Kith, so it is no way to undo a mistake of Kith's. Before a risky change (a migration you are unsure of, a manual data fix), keep a copy of Kith's data alone with `pg_dump --schema=kith`; `pg_restore --clean --schema=kith` puts it back.
+Backups are Supabase's, of the whole shared database: restoring one rolls back every project in it, not just Kith, so it is no way to undo a mistake of Kith's. Before a risky change (a migration you are unsure of, a manual data fix), keep a copy of Kith's data alone with `pg_dump --schema=kith --format=custom --file=kith.dump <connection>`; `pg_restore --clean --schema=kith --dbname=<connection> kith.dump` puts it back.
