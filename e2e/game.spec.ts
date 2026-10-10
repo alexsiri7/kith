@@ -570,6 +570,103 @@ test('keeps one world across a phone and a desktop', async ({ browser }) => {
   await phoneContext.close();
 });
 
+// Puts a world in localStorage the way the prototype saved it before the
+// server: under kith.world.v1, with no kith.sync.v1 beside it.
+function keepInBrowser(json: string): void {
+  localStorage.setItem('kith.world.v1', json);
+  localStorage.removeItem('kith.sync.v1');
+}
+
+// Each Google sign-in is a new player, so signing out and back in leaves a
+// player with no world on the server and the browser's old garden in place.
+async function signInWithGardenKept(page: Page, json: string): Promise<void> {
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.locator('#welcome')).toBeVisible();
+  await page.evaluate(keepInBrowser, json);
+  await page.getByRole('button', { name: 'Sign in with Google' }).click();
+}
+
+async function gardenSaved(page: Page): Promise<string> {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Sign in with Google' }).click();
+  const saved = page.waitForResponse(isSave);
+  await startWorld(page);
+  await saved;
+  return (await page.evaluate(() => localStorage.getItem('kith.world.v1')))!;
+}
+
+test('brings a garden kept in the browser onto the server, once', async ({
+  page,
+}) => {
+  const garden = JSON.parse(await gardenSaved(page)) as { offset: number };
+  // An hour skipped while away, so catching up has an hour to tell.
+  garden.offset += 60 * 60 * 1000;
+  await signInWithGardenKept(page, JSON.stringify(garden));
+
+  const bring = page.locator('#bring');
+  await expect(bring).toBeVisible();
+  await expect(
+    bring.getByRole('button', { name: 'Start fresh' }),
+  ).toBeVisible();
+  await expect(page.locator('#intro')).toBeHidden();
+  await expectNoHorizontalScroll(page);
+
+  const saved = page.waitForResponse(isSave);
+  await bring.getByRole('button', { name: 'Bring your garden here' }).click();
+  await expect(bring).toBeHidden();
+  await expect(page.locator('#away')).toBeVisible();
+  await expect(page.locator('#roster')).toContainText('Pip');
+  const save = await saved;
+  expect(save.request().postDataJSON()).toMatchObject({ version: 0 });
+  expect(await save.json()).toEqual({ version: 1 });
+
+  await page.reload();
+  await expect(page.locator('#roster')).toContainText('Pip');
+  await expect(bring).toBeHidden();
+  await expect(page.locator('#intro')).toBeHidden();
+});
+
+test('starts fresh instead of bringing the garden kept in the browser', async ({
+  page,
+}) => {
+  await signInWithGardenKept(page, await gardenSaved(page));
+  const bring = page.locator('#bring');
+  await expect(bring).toBeVisible();
+
+  await bring.getByRole('button', { name: 'Start fresh' }).click();
+  await expect(bring).toBeHidden();
+  await expect(page.locator('#intro')).toBeVisible();
+  expect(
+    await page.evaluate(() => localStorage.getItem('kith.world.v1')),
+  ).toBeNull();
+
+  await page.reload();
+  await expect(page.locator('#intro')).toBeVisible();
+  await expect(bring).toBeHidden();
+});
+
+test('never offers a browser garden once the player has a world on the server', async ({
+  page,
+}) => {
+  const garden = JSON.parse(await gardenSaved(page)) as {
+    kith: { name: string }[];
+  };
+  garden.kith[0]!.name = 'Zephyr';
+  // Planted as each page opens, since the page closing saves its own world.
+  await page.addInitScript(keepInBrowser, JSON.stringify(garden));
+  await page.reload();
+  await expect(page.locator('#roster')).toContainText('Pip');
+  await expect(page.locator('#roster')).not.toContainText('Zephyr');
+  await expect(page.locator('#bring')).toBeHidden();
+
+  // Start over leaves no world, but the player has had one.
+  await page.getByRole('tab', { name: 'Time' }).click();
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Start over' }).click();
+  await expect(page.locator('#intro')).toBeVisible();
+  await expect(page.locator('#bring')).toBeHidden();
+});
+
 test('tells the player when the server refuses their saves', async ({
   page,
 }) => {
