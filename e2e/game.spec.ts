@@ -1,5 +1,11 @@
 import { fileURLToPath } from 'node:url';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type Response,
+} from '@playwright/test';
 import { clientMountPath } from '../packages/server/src/client-mount.js';
 import { readAppFiles } from '../packages/server/src/index.js';
 
@@ -16,6 +22,7 @@ declare global {
   var drawEgg: (egg: { x: number }, t: number) => void;
   var camX: number;
   var speed: number;
+  function save(): void;
   const g: CanvasRenderingContext2D;
   const GROUND: number;
   const H: number;
@@ -473,8 +480,6 @@ test('opens offline with the world saved in the browser', async ({
   await page.reload();
   await expect(page.locator('#intro')).toBeHidden();
 
-  // No /api/ route answers yet; a successful one is what a cache would keep.
-  await context.route('/api/world', (route) => route.fulfill({ json: {} }));
   await page.evaluate(() => fetch('/api/world'));
   const cached = await page.evaluate(async () => {
     const keys = await (await caches.open('kith-shell')).keys();
@@ -486,6 +491,63 @@ test('opens offline with the world saved in the browser', async ({
   await page.reload();
   await expect(page.locator('#intro')).toBeHidden();
   await expect(page.locator('#roster')).toContainText('Pip');
+});
+
+const isSave = (response: Response) =>
+  response.url().endsWith('/api/world') &&
+  response.request().method() === 'PUT' &&
+  response.ok();
+
+test('keeps one world across a phone and a desktop', async ({ browser }) => {
+  const phoneContext = await browser.newContext({
+    viewport: { width: 375, height: 812 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const phone = await phoneContext.newPage();
+  await phone.goto('/');
+  await phone.getByRole('button', { name: 'Sign in with Google' }).tap();
+  const saved = phone.waitForResponse(isSave);
+  await startWorld(phone);
+  await saved;
+  // Keeps the phone's saves back, as if it were offline, while the desktop
+  // plays; otherwise the two would take turns saving.
+  await phoneContext.route('/api/world', (route) =>
+    route.request().method() === 'PUT' ? route.abort() : route.continue(),
+  );
+
+  const desktopContext = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+  });
+  await desktopContext.addCookies(await phoneContext.cookies());
+  const desktop = await desktopContext.newPage();
+  await desktop.goto('/');
+  await expect(desktop.locator('#intro')).toBeHidden();
+  await expect(desktop.locator('#roster')).toContainText('Pip');
+  await desktop.evaluate(() => {
+    world.coins = SHOP.egg.price;
+  });
+  await desktop.getByRole('tab', { name: 'Shop' }).click();
+  await desktop
+    .locator('.sku', { hasText: 'Adopt an egg' })
+    .getByRole('button')
+    .click();
+  await desktop.locator('#eggnm').fill('Nova');
+  const savedNova = desktop.waitForResponse(
+    (response) =>
+      isSave(response) && response.request().postData()!.includes('"Nova"'),
+  );
+  await desktop.getByRole('button', { name: 'Name it' }).click();
+  await savedNova;
+  await desktopContext.close();
+
+  await phoneContext.unroute('/api/world');
+  await phone.evaluate(() => save());
+  await expect(phone.locator('#toast')).toHaveText(
+    'Updated from your other device',
+  );
+  await expect(phone.locator('#roster')).toContainText('Nova');
+  await phoneContext.close();
 });
 
 test('keeps the new client at its mount', async ({ page }) => {

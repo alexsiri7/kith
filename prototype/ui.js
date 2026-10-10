@@ -1,4 +1,4 @@
-const KEY = 'kith.world.v1';
+const KEY = 'kith.world.v1', SYNC = 'kith.sync.v1', NOTE = 'kith.note';
 const $ = s => document.querySelector(s);
 let world = null, sample = null, speed = 1, lastFrame = performance.now(), saveAcc = 0;
 let camX = 0, panAt = 0, pan = null, skyObjs = { orb: null, clouds: [] }, newsQ = [], newsAt = 0;
@@ -8,12 +8,39 @@ const THINK = { food: '🥕', ball: '⚽', shelter: '🏠', you: '✋', robot: '
 const WANT_ICON = { chase: ['squirrel'], honey: ['honey'], friend: ['friend'], hug: ['doll'], music: ['music'], learn: ['words'], fetch: ['ball', 'you'], dance: ['dance'], explore: ['explore'], watch: ['sky'], sing: ['music'], practice: ['words'], play: ['ball'], cuddle: ['love'] };
 const WANT_LABEL = { chase: 'Chase the squirrel or butterflies', honey: 'Get honey (risky)', friend: 'Play with a friend', hug: 'Hug its doll', music: 'Play the music box', learn: 'Use the word board', fetch: 'Bring you the ball', dance: 'Dance', explore: 'Explore', watch: 'Watch the sky', sing: 'Sing', practice: 'Practise words', play: 'Chase the ball', cuddle: 'Snuggle up to you' };
 let wishAt = -1e9;
+let syncVersion = 0, syncing = false, syncAgain = false;
 const ACT_THINK = { poke: 'question', social: 'friend', eat: 'food', play: 'ball', rest: 'shelter', approach: 'you', sleep: 'sleep', hug: 'doll' };
 const canvas = $('#world'), g = canvas.getContext('2d');
 const H = 440;
 
-function load() { try { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
-function save() { if (!world) return; try { world.lastSeen = Date.now(); world.sel = world.creature.id; localStorage.setItem(KEY, JSON.stringify(world, (k, v) => k === 'creature' ? undefined : v)); } catch (e) {} }
+// The server keeps the world; localStorage (KEY) caches it for offline play, and SYNC holds the server version the cache is based on and whether it has changes the server lacks.
+// A cached world without SYNC predates the server, so it counts as unsaved changes on no world.
+function cached() { try { const json = localStorage.getItem(KEY), sync = JSON.parse(localStorage.getItem(SYNC)); return { json, version: sync ? sync.version : 0, dirty: sync ? sync.dirty : json != null }; } catch (e) { return { json: null, version: 0, dirty: false }; } }
+function mark(version, dirty) { syncVersion = version; try { localStorage.setItem(SYNC, JSON.stringify({ version, dirty })); } catch (e) {} }
+function remember(json, version, dirty) { try { if (json == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, json); } catch (e) {} mark(version, dirty); }
+function forget() { try { localStorage.removeItem(KEY); localStorage.removeItem(SYNC); } catch (e) {} }
+async function load() {
+  const c = cached(); let res = null, body = null;
+  try { res = await fetch('/api/world', { cache: 'no-store' }); body = await res.json(); } catch (e) { res = null; }
+  if (res && res.status === 401) { location.reload(); return new Promise(() => {}); }
+  // Unsaved changes on top of the server's current version are kept, to upload on the next save; otherwise the server's world wins.
+  if (res && (res.ok || res.status === 404) && !(c.dirty && c.version === body.version)) { const state = res.ok ? body.state : null; remember(state && JSON.stringify(state), body.version, false); return state; }
+  syncVersion = c.version; try { return c.json ? JSON.parse(c.json) : null; } catch (e) { return null; }
+}
+function save() { if (!world) return; try { world.lastSeen = Date.now(); world.sel = world.creature.id; const json = JSON.stringify(world, (k, v) => k === 'creature' ? undefined : v); remember(json, syncVersion, true); push(json); } catch (e) {} }
+// One save in flight at a time: a second would conflict with the first. A failed save stays in the cache for the next one, every 5 s.
+function push(json) {
+  if (syncing) { syncAgain = true; return; }
+  syncing = true; syncAgain = false;
+  const body = '{"version":' + syncVersion + ',"state":' + json + '}';
+  // Browsers refuse keepalive bodies over 64 KiB; a larger save that dies with the page uploads when the game next opens.
+  fetch('/api/world', { method: 'PUT', headers: { 'content-type': 'application/json' }, body, keepalive: body.length < 60e3 }).then(async res => {
+    if (res.status === 401) { world = null; location.reload(); return; }
+    if (res.status === 409) { const cur = await res.json(); world = null; remember(cur.state && JSON.stringify(cur.state), cur.version, false); if (cur.state) try { sessionStorage.setItem(NOTE, 'Updated from your other device'); } catch (e) {} location.reload(); return; }
+    if (res.ok) mark((await res.json()).version, syncAgain);
+    syncing = false; if (syncAgain) save();
+  }).catch(() => { syncing = false; });
+}
 function select(k) { if (!k) return; world.creature = k; world.sel = k.id; panAt = 0; renderRoster(); renderPanel(); renderTalk(); }
 function withKith(k, fn) { const prev = world.creature; world.creature = k; try { return fn(); } finally { world.creature = prev; } }
 function now() { return Date.now(); }
@@ -929,7 +956,7 @@ function renderPanel() {
       <div class="row"><button id="bt-reset" class="ghost danger">Start over</button></div>`;
     el.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => skip(+b.dataset.skip));
     el.querySelectorAll('[data-speed]').forEach(b => b.onclick = () => { speed = +b.dataset.speed; renderPanel(); });
-    $('#bt-reset').onclick = () => { if (confirm('Erase this world and start again?')) { try { localStorage.removeItem(KEY); } catch (e) {} location.reload(); } };
+    $('#bt-reset').onclick = () => { if (!confirm('Erase this world and start again?')) return; fetch('/api/world', { method: 'DELETE' }).then(res => { if (!res.ok) throw new Error(res.status); world = null; forget(); location.reload(); }).catch(() => toast('Starting over needs a connection.')); };
   }
 }
 function teachHelp(c) {
@@ -1037,6 +1064,8 @@ window.addEventListener('pagehide', save);
 window.addEventListener('resize', resize);
 
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; renderPanel(); });
+// The last save goes up before signing out, and the cache goes, so the next player on this browser never sees or uploads this world.
+$('form[action="/auth/sign-out"]').addEventListener('submit', () => { save(); world = null; forget(); });
 $('#talk').addEventListener('submit', e => { e.preventDefault(); const i = $('#msg'); const v = i.value; i.value = ''; talk(v); i.placeholder = 'Say something'; });
 $('#start').addEventListener('submit', e => {
   e.preventDefault();
@@ -1048,7 +1077,7 @@ $('#pname').addEventListener('input', () => $('#perr').hidden = true);
 
 (async function init() {
   resize();
-  world = load();
+  world = await load();
   if (world) {
     if (!world.kith) world.kith = [world.creature];
     world.creature = world.kith.find(k => k.id && k.id === world.sel) || world.kith.find(k => k.alive) || world.kith[0];
@@ -1070,6 +1099,7 @@ $('#pname').addEventListener('input', () => $('#perr').hidden = true);
     const since = world.simTime; catchUp(world, now()); renderRoster(); renderPanel(); renderTalk();
     if (!checkDeaths() && world.simTime - since > 20 * 60e3) homecoming(since);
   } else { const a = suggestName(); let b = suggestName(); while (b === a) b = suggestName(); $('#cnamein').placeholder = a; $('#cname2').placeholder = b; $('#intro').hidden = false; }
+  try { const note = sessionStorage.getItem(NOTE); if (note) { sessionStorage.removeItem(NOTE); toast(note); } } catch (e) {}
   requestAnimationFrame(frame);
   try { if (window.claude && window.claude.use) sample = await window.claude.use('sample'); } catch (e) { sample = null; }
   $('#llm').textContent = sample ? 'Mind: Claude' : 'Mind: simple';
