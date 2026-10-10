@@ -8,7 +8,7 @@ const THINK = { food: '🥕', ball: '⚽', shelter: '🏠', you: '✋', robot: '
 const WANT_ICON = { chase: ['squirrel'], honey: ['honey'], friend: ['friend'], hug: ['doll'], music: ['music'], learn: ['words'], fetch: ['ball', 'you'], dance: ['dance'], explore: ['explore'], watch: ['sky'], sing: ['music'], practice: ['words'], play: ['ball'], cuddle: ['love'] };
 const WANT_LABEL = { chase: 'Chase the squirrel or butterflies', honey: 'Get honey (risky)', friend: 'Play with a friend', hug: 'Hug its doll', music: 'Play the music box', learn: 'Use the word board', fetch: 'Bring you the ball', dance: 'Dance', explore: 'Explore', watch: 'Watch the sky', sing: 'Sing', practice: 'Practise words', play: 'Chase the ball', cuddle: 'Snuggle up to you' };
 let wishAt = -1e9;
-let syncVersion = 0, syncing = false, syncAgain = false;
+let syncVersion = 0, syncing = null, syncAgain = false;
 const ACT_THINK = { poke: 'question', social: 'friend', eat: 'food', play: 'ball', rest: 'shelter', approach: 'you', sleep: 'sleep', hug: 'doll' };
 const canvas = $('#world'), g = canvas.getContext('2d');
 const H = 440;
@@ -27,19 +27,21 @@ async function load() {
   if (res && (res.ok || res.status === 404) && !(c.dirty && c.version === body.version)) { const state = res.ok ? body.state : null; remember(state && JSON.stringify(state), body.version, false); return state; }
   syncVersion = c.version; try { return c.json ? JSON.parse(c.json) : null; } catch (e) { return null; }
 }
-function save() { if (!world) return; try { world.lastSeen = Date.now(); world.sel = world.creature.id; const json = JSON.stringify(world, (k, v) => k === 'creature' ? undefined : v); remember(json, syncVersion, true); push(json); } catch (e) {} }
-// One save in flight at a time: a second would conflict with the first. A failed save stays in the cache for the next one, every 5 s.
+// Resolves to whether the server now has this device's changes.
+function save() { if (!world) return Promise.resolve(true); try { world.lastSeen = Date.now(); world.sel = world.creature.id; const json = JSON.stringify(world, (k, v) => k === 'creature' ? undefined : v); remember(json, syncVersion, true); return push(json); } catch (e) { return Promise.resolve(false); } }
+// One save in flight at a time: a second would conflict with the first, so it waits and goes up after. A failed save stays in the cache for the next one, every 5 s.
 function push(json) {
-  if (syncing) { syncAgain = true; return; }
-  syncing = true; syncAgain = false;
+  if (syncing) { syncAgain = true; return syncing; }
+  syncAgain = false;
   const body = '{"version":' + syncVersion + ',"state":' + json + '}';
   // Browsers refuse keepalive bodies over 64 KiB; a larger save that dies with the page uploads when the game next opens.
-  fetch('/api/world', { method: 'PUT', headers: { 'content-type': 'application/json' }, body, keepalive: body.length < 60e3 }).then(async res => {
-    if (res.status === 401) { world = null; location.reload(); return; }
-    if (res.status === 409) { const cur = await res.json(); world = null; remember(cur.state && JSON.stringify(cur.state), cur.version, false); if (cur.state) try { sessionStorage.setItem(NOTE, 'Updated from your other device'); } catch (e) {} location.reload(); return; }
-    if (res.ok) mark((await res.json()).version, syncAgain);
-    syncing = false; if (syncAgain) save();
-  }).catch(() => { syncing = false; });
+  syncing = fetch('/api/world', { method: 'PUT', headers: { 'content-type': 'application/json' }, body, keepalive: body.length < 60e3 }).then(async res => {
+    if (res.status === 401) { world = null; location.reload(); return false; }
+    if (res.status === 409) { const cur = await res.json(); world = null; remember(cur.state && JSON.stringify(cur.state), cur.version, false); if (cur.state) try { sessionStorage.setItem(NOTE, 'Updated from your other device'); } catch (e) {} location.reload(); return false; }
+    if (!res.ok) { toast(`Your world isn't saving to the server (error ${res.status}). It's kept on this device for now.`); return false; }
+    mark((await res.json()).version, syncAgain); return true;
+  }).catch(() => false).then(saved => { syncing = null; return saved && syncAgain ? save() : saved; });
+  return syncing;
 }
 function select(k) { if (!k) return; world.creature = k; world.sel = k.id; panAt = 0; renderRoster(); renderPanel(); renderTalk(); }
 function withKith(k, fn) { const prev = world.creature; world.creature = k; try { return fn(); } finally { world.creature = prev; } }
@@ -1064,8 +1066,11 @@ window.addEventListener('pagehide', save);
 window.addEventListener('resize', resize);
 
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; renderPanel(); });
-// The last save goes up before signing out, and the cache goes, so the next player on this browser never sees or uploads this world.
-$('form[action="/auth/sign-out"]').addEventListener('submit', () => { save(); world = null; forget(); });
+// Signing out waits for the last save to reach the server, then clears the cache so the next player on this browser never sees or uploads this world.
+$('form[action="/auth/sign-out"]').addEventListener('submit', e => {
+  e.preventDefault(); const form = e.currentTarget;
+  save().then(saved => { if (!saved) return toast('Signing out needs a connection, so your last changes are saved first.'); world = null; forget(); form.submit(); });
+});
 $('#talk').addEventListener('submit', e => { e.preventDefault(); const i = $('#msg'); const v = i.value; i.value = ''; talk(v); i.placeholder = 'Say something'; });
 $('#start').addEventListener('submit', e => {
   e.preventDefault();

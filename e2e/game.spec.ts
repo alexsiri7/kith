@@ -22,7 +22,7 @@ declare global {
   var drawEgg: (egg: { x: number }, t: number) => void;
   var camX: number;
   var speed: number;
-  function save(): void;
+  function save(): Promise<boolean>;
   const g: CanvasRenderingContext2D;
   const GROUND: number;
   const H: number;
@@ -195,12 +195,31 @@ for (const viewport of viewports) {
       await page.reload();
       await expect(page.locator('#intro')).toBeVisible();
       await page.locator('#pname').fill('Alex');
+      const saved = page.waitForResponse(isSave);
       await press(page.getByRole('button', { name: 'Place the egg' }));
       await expect(page.locator('#intro')).toBeHidden();
+      await saved;
 
+      const cache = () =>
+        page.evaluate(() => [
+          localStorage.getItem('kith.world.v1'),
+          localStorage.getItem('kith.sync.v1'),
+        ]);
+      await page.route('/api/world', (route) =>
+        route.request().method() === 'PUT' ? route.abort() : route.continue(),
+      );
+      await press(page.getByRole('button', { name: 'Sign out' }));
+      await expect(page.locator('#toast')).toHaveText(
+        'Signing out needs a connection, so your last changes are saved first.',
+      );
+      await expect(page.locator('#world')).toHaveCount(1);
+      expect(await cache()).not.toContain(null);
+
+      await page.unroute('/api/world');
       await press(page.getByRole('button', { name: 'Sign out' }));
       await expect(welcome).toBeVisible();
       await expect(page.locator('#world')).toHaveCount(0);
+      expect(await cache()).toEqual([null, null]);
       expect(
         (await context.cookies()).some(
           (cookie) => cookie.name === 'kith_session',
@@ -548,6 +567,26 @@ test('keeps one world across a phone and a desktop', async ({ browser }) => {
   );
   await expect(phone.locator('#roster')).toContainText('Nova');
   await phoneContext.close();
+});
+
+test('tells the player when the server refuses their saves', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Sign in with Google' }).click();
+  const saved = page.waitForResponse(isSave);
+  await startWorld(page);
+  await saved;
+  await page.route('/api/world', (route) =>
+    route.request().method() === 'PUT'
+      ? route.fulfill({ status: 413, json: { error: 'Too big' } })
+      : route.continue(),
+  );
+
+  expect(await page.evaluate(() => save())).toBe(false);
+  await expect(page.locator('#toast')).toHaveText(
+    "Your world isn't saving to the server (error 413). It's kept on this device for now.",
+  );
 });
 
 test('keeps the new client at its mount', async ({ page }) => {
