@@ -6,7 +6,7 @@
 - `src/constants.ts`: the prototype's constants. `src/types.ts`: the shapes of its world, Kith, items, robot, fauna and events, as loose as the prototype is.
 - `src/rng.ts`: the seeded random stream that replaces `Math.random`.
 
-`tests/legacy-sim-parity.test.ts` (at the repository root) runs `prototype/sim.js` and this port side by side on the same random stream and requires them to build identical worlds: one, two and four Kith left alone, a whole lifetime with eggs and hatchlings, and a live session with the player. `src/scenarios.test.ts` turns the prototype's balance script `prototype/tests/test8.js` into assertions.
+`tests/legacy-sim-parity.test.ts` (at the repository root) runs `prototype/sim.js` and this port side by side on the same random stream and requires them to build identical worlds: one, two and four Kith left alone, a whole lifetime with eggs and hatchlings, and live sessions with the player playing with a Kith and tending the garden. `src/scenarios.test.ts` turns the prototype's balance script `prototype/tests/test8.js` into assertions.
 
 ## Where it differs from the prototype
 

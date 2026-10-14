@@ -133,4 +133,39 @@ describe('legacy-sim matches prototype/sim.js', () => {
     });
     expect(actual).toEqual(expected);
   });
+
+  it('while the player tends the garden', () => {
+    const { expected, actual } = both(1200, (S) => {
+      const w = S.newWorld(1200, NOW, 'Alex', 'Pip', 'Moss');
+      for (const c of w.kith) c.hatchAt = NOW;
+      w.coins = 500;
+      S.step(w, 1000);
+      S.plantBush(w, 1240);
+      S.plantCarrots(w, 200);
+      S.buyShelter(w, 1240);
+      const ctx = { present: true, hand: { x: 400, y: 300 }, live: true };
+      const events: unknown[] = [];
+      for (let t = 0; t < 30 * 60 * 5; t++) {
+        events.push(S.step(w, 200, ctx));
+        if (t % 600 === 0) events.push(S.toggleLever(w));
+        if (t % 500 === 0) events.push(S.pressMusic(w));
+        if (t % 800 === 0) events.push(S.pressVendor(w));
+        if (t % 1000 === 0) events.push(S.callOver(w, 900));
+      }
+      const night = {
+        id: w.creature.id,
+        name: w.creature.name,
+        since: NOW,
+        until: w.simTime,
+        wx: 0,
+      };
+      S.applyNight(w, night, {
+        beliefs: [{ about: 'river', feel: -0.6, text: 'water bites' }],
+        wants: [{ what: 'explore', why: 'over there?' }],
+        dream: 'Pip dreamed of carrots.',
+      });
+      return comparable({ events, w }, S !== Port);
+    });
+    expect(actual).toEqual(expected);
+  });
 });
