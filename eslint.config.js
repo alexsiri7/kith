@@ -10,10 +10,12 @@ const hostGlobals = [
 
 // The engine and content must produce identical worlds from identical inputs
 // on any device or server, so they may not read the clock, ambient randomness
-// or anything provided by the host environment.
+// or anything provided by the host environment. Neither may legacy-sim, the
+// reference the engine is checked against.
 export const deterministicPackages = [
   'packages/engine/**',
   'packages/content/**',
+  'packages/legacy-sim/**',
 ];
 
 export default tseslint.config(

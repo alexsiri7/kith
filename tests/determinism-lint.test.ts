@@ -10,9 +10,13 @@ async function ruleViolations(code: string, filePath: string) {
 }
 
 describe('determinism lint rule', () => {
-  it('covers exactly the engine and content packages', () => {
+  it('covers exactly the engine, content and legacy-sim packages', () => {
     expect(new Set(deterministicPackages)).toEqual(
-      new Set(['packages/engine/**', 'packages/content/**']),
+      new Set([
+        'packages/engine/**',
+        'packages/content/**',
+        'packages/legacy-sim/**',
+      ]),
     );
   });
 
