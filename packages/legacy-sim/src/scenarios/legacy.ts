@@ -12,7 +12,7 @@ import {
   ruleWants,
   step,
 } from '../index.js';
-import type { Creature, LogEntry, World } from '../index.js';
+import type { Creature, LogEntry, LogType, World } from '../index.js';
 import type {
   Activity,
   KithTally,
@@ -47,6 +47,7 @@ export const legacySim: ScenarioSim = {
     return {
       kith: kith.map(tally),
       tockSpent: w.tockSpent || 0,
+      meals: (log.events.ate ?? 0) + (log.events.vended ?? 0),
       events: log.events,
       activity,
     };
@@ -100,7 +101,7 @@ function visit(w: World, session: LiveSession, eachStep: () => void) {
 
 /** Counts every log entry once, though the log keeps only its last 800. */
 function logCounter(w: World) {
-  const events: Record<string, number> = {};
+  const events: Partial<Record<LogType, number>> = {};
   let last: LogEntry | undefined;
   return {
     events,

@@ -46,6 +46,7 @@ import type {
   HurtEvent,
   Item,
   ItemType,
+  LogType,
   Night,
   NightResult,
   Robot,
@@ -365,7 +366,7 @@ export function fearsRiver(c: Creature) {
 function naiveOk(w: World, x: number) {
   return reachable(w, x) || !fearsRiver(w.creature);
 }
-export function log(w: World, type: string, text: string) {
+export function log(w: World, type: LogType, text: string) {
   w.log.push({
     t: w.simTime,
     type,
@@ -2747,7 +2748,7 @@ export function dayDigest(w: World, since: number, until: number) {
     ev = w.log.filter(
       (e) => e.t > since && e.t <= until && (!e.who || e.who === me),
     ),
-    n = (t: string) => ev.filter((e) => e.type === t).length;
+    n = (t: LogType) => ev.filter((e) => e.type === t).length;
   const d = {
     stung: n('stung'),
     pricked: n('pricked'),
@@ -2970,7 +2971,7 @@ export function awaySummary(w: World, since: number) {
   for (const e of all.filter((e) => e.type === 'egg')) out.push(e.text + '!');
   for (const k of w.kith) {
     const ev = all.filter((e) => e.who === k.id),
-      n = (t: string) => ev.filter((e) => e.type === t).length,
+      n = (t: LogType) => ev.filter((e) => e.type === t).length,
       bits: string[] = [];
     if (n('hatch')) bits.push('hatched');
     if (n('ate') + n('vended'))

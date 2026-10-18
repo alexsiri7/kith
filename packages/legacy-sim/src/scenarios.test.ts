@@ -11,7 +11,6 @@ describe('the balance scenarios on legacy-sim', () => {
     // A synchronous test still fails once it runs past its timeout.
     it(name, { timeout: l.maxMs ?? 60_000 }, () => {
       const s = runScenario(legacySim, scenario);
-      const meals = (s.events.ate ?? 0) + (s.events.vended ?? 0);
       const at = JSON.stringify(s);
       if (l.maxDeaths !== undefined)
         expect(s.deaths, at).toBeLessThanOrEqual(l.maxDeaths);
@@ -28,7 +27,7 @@ describe('the balance scenarios on legacy-sim', () => {
           l.minPlayingOrWishing,
         );
       if (l.minMeals !== undefined)
-        expect(meals, at).toBeGreaterThanOrEqual(l.minMeals);
+        expect(s.meals, at).toBeGreaterThanOrEqual(l.minMeals);
     });
   }
 
@@ -42,6 +41,18 @@ describe('the balance scenarios on legacy-sim', () => {
     });
     const counted = Object.values(events).reduce((a, b) => a + b, 0);
     expect(counted).toBeGreaterThan(800);
+  });
+
+  it('tallies only the Kith a garden started with, not their young', () => {
+    const { kith, events } = legacySim.run({
+      seed: 600,
+      kith: 2,
+      coins: 100,
+      days: 7,
+      present: false,
+    });
+    expect(events.hatch).toBeGreaterThan(2);
+    expect(kith).toHaveLength(2);
   });
 
   it('turns out the same world from the same seed', () => {

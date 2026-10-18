@@ -284,9 +284,50 @@ export interface Gadgets {
   board: Board;
 }
 
+/** What the garden's log records; `talk` is logged by the app when the player speaks. */
+export type LogType =
+  | 'ate'
+  | 'avoided'
+  | 'board'
+  | 'bridge-up'
+  | 'chased'
+  | 'comfort'
+  | 'death'
+  | 'egg'
+  | 'fell-in'
+  | 'fetched'
+  | 'forgot'
+  | 'frost'
+  | 'handfed'
+  | 'hatch'
+  | 'honey'
+  | 'music'
+  | 'played'
+  | 'played-together'
+  | 'river-scold'
+  | 'robot-warn'
+  | 'scold'
+  | 'shelter'
+  | 'sitter-bridge'
+  | 'sitter-fed'
+  | 'sitter-guided'
+  | 'slept-out'
+  | 'storm'
+  | 'talk'
+  | 'tickle'
+  | 'tock-bought'
+  | 'tock-broke'
+  | 'tock-led'
+  | 'vended'
+  | 'want'
+  | 'warned'
+  | 'word'
+  | ConditionFlag
+  | HurtEvent;
+
 export interface LogEntry {
   t: number;
-  type: string;
+  type: LogType;
   text: string;
   who: string | null;
 }

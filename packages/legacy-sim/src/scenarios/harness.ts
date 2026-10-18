@@ -28,6 +28,8 @@ export interface KithTally {
 export interface WorldTally {
   kith: KithTally[];
   tockSpent: number;
+  /** Times any Kith ate, however it came by the food. */
+  meals: number;
   /** Every logged event, counted by type. */
   events: Record<string, number>;
   /** Milliseconds each living Kith spent on each activity while the player was there. */
@@ -55,6 +57,8 @@ export interface Stats {
   deathsByCause: Record<string, number>;
   /** Per world. */
   tockSpent: number;
+  /** Per world. */
+  meals: number;
   /** Per world. */
   events: Record<string, number>;
   /** Share of the Kith. */
@@ -90,6 +94,7 @@ export function runScenario(sim: ScenarioSim, scenario: Scenario): Stats {
     deaths: deaths.length,
     deathsByCause: sum(deaths.map((cause) => ({ [cause]: 1 }))),
     tockSpent: mean(worlds.map((w) => w.tockSpent)),
+    meals: mean(worlds.map((w) => w.meals)),
     events: scale(sum(worlds.map((w) => w.events)), 1 / worlds.length),
     riverAvoiders: mean(kith.map((k) => (k.avoidsRiver ? 1 : 0))),
     words: mean(kith.map((k) => k.words)),
