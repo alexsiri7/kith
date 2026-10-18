@@ -54,7 +54,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: docker build -t kith-server .
+      - name: Build the image
+        # The base image's registry rate-limits anonymous pulls; retry on transient 429s.
+        run: |
+          for i in 1 2 3; do
+            docker build -t kith-server . && exit 0
+            echo "docker build failed (attempt $i/3), retrying..." >&2
+            sleep $((i * 10))
+          done
+          exit 1
       - name: Serve /healthz, the welcome page and the client from the image
         run: |
           docker run -d --name kith-server -p 3000:3000 \
