@@ -35,6 +35,11 @@ export default defineRailway(() => {
       SENTRY_DSN: preserve(),
       GOOGLE_CLIENT_ID: preserve(),
       GOOGLE_CLIENT_SECRET: preserve(),
+      // Written by the Doppler sync (project kith, config prd) that supplies
+      // the secrets above: docs/operations.md.
+      DOPPLER_CONFIG: preserve(),
+      DOPPLER_ENVIRONMENT: preserve(),
+      DOPPLER_PROJECT: preserve(),
     },
   });
 

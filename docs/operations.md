@@ -23,21 +23,22 @@ The first `apply` creates the project, the service and the custom domain.
 
 ## Variables
 
-| Variable                 | Where the value lives                                          |
-| ------------------------ | -------------------------------------------------------------- |
-| `PORT`                   | `railway.ts` (`3000`, the port the custom domain routes to).   |
-| `APP_ORIGIN`             | `railway.ts` (`https://kith.interstellarai.net`).              |
-| `DATABASE_URL`           | Railway dashboard only. See [Database](#database).             |
-| `LLM_API_KEY`            | Railway dashboard only. The Requesty key.                      |
-| `LLM_MODEL`              | Unset (defaults to Claude Haiku 4.5); set in `railway.ts`.     |
-| `MIND_DAILY_CALLS`       | Unset (defaults to 300). Set in `railway.ts` to change it.     |
-| `MIND_MONTHLY_SPEND_USD` | Unset (defaults to 20). Set in `railway.ts` to change it.      |
-| `SESSION_SECRET`         | Railway dashboard only. Generate with `openssl rand -hex 32`.  |
-| `SENTRY_DSN`             | Railway dashboard only; may be left empty.                     |
-| `GOOGLE_CLIENT_ID`       | Railway dashboard only. See [Google sign-in](#google-sign-in). |
-| `GOOGLE_CLIENT_SECRET`   | Railway dashboard only. See [Google sign-in](#google-sign-in). |
+| Variable                 | Where the value lives                                        |
+| ------------------------ | ------------------------------------------------------------ |
+| `PORT`                   | `railway.ts` (`3000`, the port the custom domain routes to). |
+| `APP_ORIGIN`             | `railway.ts` (`https://kith.interstellarai.net`).            |
+| `DATABASE_URL`           | Doppler `kith`/`prd`. See [Database](#database).             |
+| `LLM_API_KEY`            | Doppler `kith`/`prd`. The Requesty key.                      |
+| `LLM_MODEL`              | Unset (defaults to Claude Haiku 4.5); set in `railway.ts`.   |
+| `MIND_DAILY_CALLS`       | Unset (defaults to 300). Set in `railway.ts` to change it.   |
+| `MIND_MONTHLY_SPEND_USD` | Unset (defaults to 20). Set in `railway.ts` to change it.    |
+| `SESSION_SECRET`         | Doppler `kith`/`prd`. Generate with `openssl rand -hex 32`.  |
+| `SENTRY_DSN`             | Doppler `kith`/`prd`: Sentry project `kith`; may be empty.   |
+| `GOOGLE_CLIENT_ID`       | Doppler `kith`/`prd`. See [Google sign-in](#google-sign-in). |
+| `GOOGLE_CLIENT_SECRET`   | Doppler `kith`/`prd`. See [Google sign-in](#google-sign-in). |
+| `DOPPLER_*`              | Written by the Doppler sync itself.                          |
 
-Secrets are declared with `preserve()`, so `apply` keeps whatever value the dashboard holds and their values never enter the repository. When you add a variable in the dashboard, add its `preserve()` line to `railway.ts` too. The server refuses to start, listing every problem, while any required variable is missing or invalid (see the README's [Server](../README.md#server) section).
+Secret values live in Doppler, project `kith`, config `prd`, which syncs them into the `kith` service's variables. Change them in Doppler, not in the Railway dashboard: the sync overwrites the service's copy. Secrets are declared with `preserve()` in `railway.ts`, so `apply` keeps whatever value Railway holds and their values never enter the repository. When you add a variable to Doppler, add its `preserve()` line to `railway.ts` too, or `apply` plans to delete it. The server refuses to start, listing every problem, while any required variable is missing or invalid (see the README's [Server](../README.md#server) section).
 
 ## Google sign-in
 
@@ -46,7 +47,7 @@ Players sign in with an OAuth client in the Google Cloud console (**APIs & Servi
 - Authorized JavaScript origin: `https://kith.interstellarai.net`
 - Authorized redirect URI: `https://kith.interstellarai.net/auth/google/callback`
 
-Its consent screen needs only the `openid`, `email` and `profile` scopes. Put the client's id and secret in `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. If `APP_ORIGIN` ever changes, add the new origin and redirect URI to the client first, or sign-in fails with Google's `redirect_uri_mismatch`.
+The live site uses the Google client shared by the other interstellarai.net apps (Doppler `shared`/`prd`), in Google Cloud project `imreli`; its origin and redirect URI above must be on that client's lists. Its consent screen needs only the `openid`, `email` and `profile` scopes. Put the client's id and secret in `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. If `APP_ORIGIN` ever changes, add the new origin and redirect URI to the client first, or sign-in fails with Google's `redirect_uri_mismatch`.
 
 ## DNS
 
@@ -72,7 +73,7 @@ Kith's tables live in the shared Supabase "prod" database, which holds every pro
 
 ### Creating the schema and role
 
-Once, before the first deploy, run this in the Supabase SQL editor (as `postgres`), with a fresh password (`openssl rand -hex 32`) in place of `<password>`:
+Once, before the first deploy, run this in the Supabase SQL editor (as `postgres`), with a fresh password (`openssl rand -hex 32`) in place of `<password>`. (Done for production on 2026-10-18, with the role also made `NOINHERIT NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`, `kith` revoked from `PUBLIC`, `anon`, `authenticated` and `service_role`, and `CREATE, TEMPORARY` on the database revoked from `kith_app`.)
 
 ```sql
 CREATE ROLE kith_app LOGIN PASSWORD '<password>';
@@ -89,4 +90,6 @@ ALTER ROLE kith_app SET search_path = kith;
 
 ### Backups
 
-Backups are Supabase's, of the whole shared database: restoring one rolls back every project in it, not just Kith, so it is no way to undo a mistake of Kith's. Before a risky change (a migration you are unsure of, a manual data fix), keep a copy of Kith's data alone with `pg_dump --schema=kith --format=custom --file=kith.dump <connection>`; `pg_restore --clean --schema=kith --dbname=<connection> kith.dump` puts it back.
+The shared database is on Supabase's free plan, which keeps no backups of its own. The factory's `backup-dbs.sh` (in `alexsiri7/interstellarai.net`, `ops/cron/`) dumps the `kith` schema every 3 hours as `kith_app`, using `KITH_DB_URL` (the session pooler, port 5432) from Doppler `factory`/`prd`. Archives are plain-SQL `kith-<timestamp>.sql.gz` files, kept 7 days in `/mnt/steam-slow/backups/kith/` on the factory host and copied to Google Drive under `backups/gas-town/kith/`; `restore-test.sh` restores the newest into a scratch database every week to prove it works.
+
+To restore one: stop the `kith` service (or accept that writes in between are lost), drop Kith's tables as `kith_app` (`DROP TABLE ... CASCADE` for each table in `kith`; the schema itself stays), then replay the archive as `kith_app` through the session pooler, leaving out its `CREATE SCHEMA` line, which `kith_app` may not run: `gunzip -c kith-<timestamp>.sql.gz | grep -v '^CREATE SCHEMA kith;$' | psql -v ON_ERROR_STOP=1 <session-pooler connection>`. Check `/readyz` afterwards. Before a risky change (a migration you are unsure of, a manual data fix), keep a copy of Kith's data alone with `pg_dump --schema=kith --format=custom --file=kith.dump <connection>`; `pg_restore --clean --schema=kith --dbname=<connection> kith.dump` puts it back.
