@@ -2,9 +2,9 @@
 created: '2026-09-30'
 github_issue: 21
 id: '003'
-status: idea
+status: in-progress
 title: Always-on worlds on a server (Railway + Postgres)
-updated: '2026-09-30'
+updated: '2026-10-18'
 ---
 
 ## Why
