@@ -6,7 +6,7 @@
 - `src/constants.ts`: the prototype's constants. `src/types.ts`: the shapes of its world, Kith, items, robot, fauna and events, as loose as the prototype is.
 - `src/rng.ts`: the seeded random stream that replaces `Math.random`.
 
-`tests/legacy-sim-parity.test.ts` (at the repository root) runs `prototype/sim.js` and this port side by side on the same random stream and requires them to build identical worlds: one, two and four Kith left alone, a whole lifetime with eggs and hatchlings, and live sessions with the player playing with a Kith and tending the garden. `src/scenarios.test.ts` turns the prototype's balance script `prototype/tests/test8.js` into assertions.
+`tests/legacy-sim-parity.test.ts` (at the repository root) runs `prototype/sim.js` and this port side by side on the same random stream and requires them to build identical worlds: one, two and four Kith left alone, a whole lifetime with eggs and hatchlings, and live sessions with the player playing with a Kith and tending the garden. `src/scenarios.test.ts` checks the garden's balance (see below).
 
 ## Where it differs from the prototype
 
@@ -17,14 +17,19 @@ None of these changes a rule of the garden; the parity test pins everything else
 - **Time zone.** `localParts` read the host's time zone; it now treats time as UTC. That moves `allowanceDay` and `presenceDay`, and the weather only when `scale` is 1 (worlds run at `SCALE`, 6).
 - **Wants.** `setWants` ignores a want named after an inherited object property such as `constructor`, which the prototype let through.
 - Unused parameters are gone (`sitterOn()`, `newFauna()`), as is `robotCare`, which did nothing.
+- `fearsRiver` is exported, for the balance scenarios.
 
 ## Balance scenarios
 
-`prototype/tests/test8.js` printed these per-world numbers over three runs (20 worlds each, started at different times); `src/scenarios.test.ts` asserts that the port, with seeds 600–619, lands in ranges around them:
+`src/scenarios/balance.ts` holds the thresholds the garden must meet, on this port now and on the new engine later: the prototype's printed checks (`prototype/tests/test2.js`, `test5.js`, `test8.js`) as assertions. `runScenario` in `src/scenarios/harness.ts` runs a scenario on seeds 600–619 through a `ScenarioSim`, the adapter a simulation implements; `src/scenarios/legacy.ts` is this port's. It counts every logged event, where the prototype's scripts read the log, which keeps only its last 800 entries and so undercounts a big family's days.
 
-| Scenario                  | Deaths | Tock spent | Chased  | Honey   | Stung   | Tock bought |
-| ------------------------- | ------ | ---------- | ------- | ------- | ------- | ----------- |
-| 1 Kith, 24h, 0 coins      | 0/20   | 3–4        | 27      | 2.6–3.5 | 1.5–1.8 | 0.3–0.4     |
-| 1 Kith, 3 days, 0 coins   | 0/20   | 13–16      | 84–87   | 3.1–3.5 | 1.7–1.8 | 1.3–1.6     |
-| 2 Kith, 3 days, 100 coins | 0/40   | 89–97      | 124     | 3–4     | 1.4–1.6 | 7.3–8.1     |
-| 4 Kith, 3 days, 100 coins | 2–4/80 | 1241–1438  | 100–106 | 5.1–7.7 | 2.3–3.4 | 50–59       |
+On this port, per world:
+
+| Scenario                  | Deaths | Tock spent | Chased | Honey | Stung | Tock bought |
+| ------------------------- | ------ | ---------- | ------ | ----- | ----- | ----------- |
+| 1 Kith, 24h, 0 coins      | 0/20   | 2          | 26     | 3.7   | 1.9   | 0.2         |
+| 1 Kith, 3 days, 0 coins   | 0/20   | 12         | 84     | 4.4   | 2.2   | 1.2         |
+| 2 Kith, 3 days, 100 coins | 0/40   | 78         | 161    | 7.6   | 4.2   | 7.8         |
+| 4 Kith, 3 days, 100 coins | 0/80   | 1328       | 331    | 19.5  | 10.1  | 133         |
+
+After 2 days alone all 20 Kith keep away from the river. In 40 minutes with the player's hand near, a Kith rests half the time, plays or follows its wishes 27% of it and eats 1.6 times. Catching up 7 days with 4 Kith takes about half a second.

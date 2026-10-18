@@ -359,7 +359,7 @@ function reachable(w: World, x: number) {
   const c = w.creature;
   return w.bridge || sideOf(x) === sideOf(c.x) || sideOf(c.x) === 0;
 }
-function fearsRiver(c: Creature) {
+export function fearsRiver(c: Creature) {
   return c.riverFear >= 0.35 + 0.3 * c.genome.curiosity;
 }
 function naiveOk(w: World, x: number) {
