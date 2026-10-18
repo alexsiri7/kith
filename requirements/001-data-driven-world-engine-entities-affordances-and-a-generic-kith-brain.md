@@ -2,9 +2,9 @@
 created: '2026-09-30'
 github_issue: 1
 id: '001'
-status: idea
+status: in-progress
 title: 'Data-driven world engine: entities, affordances and a generic Kith brain'
-updated: '2026-09-30'
+updated: '2026-10-18'
 ---
 
 ## Why
