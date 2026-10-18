@@ -2,10 +2,10 @@
 created: '2026-10-05'
 github_issue: 1
 id: '004'
-status: idea
+status: in-progress
 title: Kith is live at kith.interstellarai.net, playable from phone and web, with
   the world saved in a database
-updated: '2026-10-05'
+updated: '2026-10-18'
 ---
 
 ## Why
