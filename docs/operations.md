@@ -57,6 +57,8 @@ The live site uses the Google client shared by the other interstellarai.net apps
 
 A push to `main` deploys automatically. `checkSuites` makes Railway wait for the commit's GitHub checks (CI's `check` and `image` jobs) and skip the deploy if any fails. Railway then builds the image and starts it beside the current deploy; traffic moves to it only once `/readyz` answers 200 — that is, once the server is up and Postgres answers `SELECT 1`. A deploy that does not get there within 60 seconds fails, and the previous deploy keeps serving.
 
+A skipped deploy stays skipped: re-running a failed CI job until it passes (for example after a registry rate limit) does not make Railway deploy that commit. It ships with the next push to `main` whose CI passes, so to ship it sooner, push again (an empty commit will do).
+
 To check a deploy: `https://kith.interstellarai.net/healthz` answers 200 while the process is up; `/readyz` answers 200 while the database is reachable and 503 otherwise.
 
 ### Rolling back
