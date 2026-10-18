@@ -51,7 +51,7 @@ Production runs on Railway at <https://kith.interstellarai.net>, declared in `.r
 | `LLM_MODEL`              | no       | Requesty model as `provider/model`, one with a list price in `mind.ts`; defaults to `anthropic/claude-haiku-4-5-20251001`. |
 | `MIND_DAILY_CALLS`       | no       | Whole number; Claude calls each player's Kith may make a day (UTC); defaults to 300. 0 turns the mind off.                 |
 | `MIND_MONTHLY_SPEND_USD` | no       | Amount in US dollars all players' Claude calls may cost a month (UTC); defaults to 20.                                     |
-| `SENTRY_DSN`             | no       | URL.                                                                                                                       |
+| `SENTRY_DSN`             | no       | URL; the server and the migration report errors there, without request bodies or cookies.                                  |
 | `APP_ORIGIN`             | yes      | Public origin, e.g. `https://kith.example` (no path).                                                                      |
 | `SESSION_SECRET`         | yes      | At least 32 characters.                                                                                                    |
 | `GOOGLE_CLIENT_ID`       | yes      | The Google OAuth client's id.                                                                                              |
