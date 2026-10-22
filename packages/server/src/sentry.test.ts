@@ -19,6 +19,7 @@ interface SentEvent {
     query_string?: unknown;
     headers?: Record<string, string>;
   };
+  user?: { ip_address?: string };
 }
 
 const failing = (what: string) => () => Promise.reject(new Error(what));
@@ -146,6 +147,7 @@ describe('startSentry', () => {
     expect(sent).not.toContain('player-world');
     expect(event!.request?.cookies).toBeUndefined();
     expect(event!.request?.data).toBeUndefined();
+    expect(event!.user?.ip_address).toBeUndefined();
   });
 
   it('reports an error thrown by an onRequest hook', async () => {
@@ -181,6 +183,7 @@ describe('startSentry', () => {
     const sent = JSON.stringify(events[0]);
     expect(sent).not.toContain(session);
     expect(sent).not.toContain('player-id');
+    expect(events[0]!.user?.ip_address).toBeUndefined();
   });
 
   it('reports a failed sign-in without its query string', async () => {

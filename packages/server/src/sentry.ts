@@ -12,11 +12,11 @@ import * as Sentry from '@sentry/node';
  * hooks such as `onRequest` only through an `onError` hook it adds to each
  * instance as `Fastify()` creates it.
  *
- * Player worlds and session cookies must not leave the server, so nothing
- * that can carry them is collected: request bodies, cookies, URL query
- * strings (the sign-in callback carries Google's code), database query data,
- * or local variables in stack frames. The SDK already filters the
- * `Authorization` and `Cookie` headers.
+ * Player worlds, session cookies and players' IP addresses must not leave
+ * the server, so nothing that can carry them is collected: user details,
+ * request bodies, cookies, URL query strings (the sign-in callback carries
+ * Google's code), database query data, or local variables in stack frames.
+ * The SDK already filters the `Authorization` and `Cookie` headers.
  */
 export function startSentry(
   dsn: string | undefined,
@@ -29,6 +29,7 @@ export function startSentry(
     environment: env.RAILWAY_ENVIRONMENT_NAME,
     release: env.RAILWAY_GIT_COMMIT_SHA,
     dataCollection: {
+      userInfo: false,
       cookies: false,
       httpBodies: [],
       urlQueryParams: false,
