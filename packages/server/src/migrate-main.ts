@@ -1,6 +1,9 @@
 import pg from 'pg';
 import { assertConfinedRole, poolConfig } from './database.js';
 import { migrateDatabase } from './migrations.js';
+import { startSentry } from './sentry.js';
+
+startSentry(process.env.SENTRY_DSN, process.env);
 
 // Only the database is needed here, so the server's other required settings
 // must not be able to block a pre-deploy migration.

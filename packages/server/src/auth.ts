@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import fastifyCookie from '@fastify/cookie';
+import * as Sentry from '@sentry/node';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 import type { GoogleIdentity, IdentityProvider } from './google.js';
@@ -157,6 +158,8 @@ export const auth = fp<AuthOptions>(async (app, options) => {
         userId = await options.users.signIn(identity);
       } catch (err) {
         request.log.error({ err }, 'Failed to save the signed-in user');
+        // Answered by hand, so Fastify's Sentry integration never sees it.
+        Sentry.captureException(err);
         return reply.code(500).send({ error: 'Internal Server Error' });
       }
       issueSession(reply, userId);

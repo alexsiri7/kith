@@ -10,9 +10,12 @@ import { googleProvider } from './google.js';
 import { buildServer } from './index.js';
 import { PgMindUsage, requestyMind } from './mind.js';
 import { PgPrototypeWorldStore } from './prototype-worlds.js';
+import { startSentry } from './sentry.js';
 import { PgUserStore } from './users.js';
 
 const config = loadConfig(process.env);
+// Before buildServer, or Sentry never hears of the app's errors.
+startSentry(config.sentryDsn, process.env);
 const pool = new pg.Pool(poolConfig(config.databaseUrl, process.env));
 const app = buildServer({
   checkDatabase: () => pool.query('SELECT 1'),

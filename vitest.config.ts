@@ -5,7 +5,14 @@ import { sourceCondition } from './source-condition.js';
 export default defineConfig({
   ssr: {
     resolve: {
-      conditions: [sourceCondition, ...defaultServerConditions],
+      // Vitest's own default drops `module`: packages such as
+      // @opentelemetry/api point it at builds Node cannot import.
+      conditions: [
+        sourceCondition,
+        ...defaultServerConditions.filter(
+          (condition) => condition !== 'module',
+        ),
+      ],
     },
   },
   test: {

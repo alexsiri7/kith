@@ -20,9 +20,11 @@ describe('server entrypoint', () => {
   }));
   const query = vi.fn();
   const poolConfigs: unknown[] = [];
+  const startSentry = vi.fn();
 
   beforeEach(() => {
     vi.doMock('./index.js', () => ({ buildServer }));
+    vi.doMock('./sentry.js', () => ({ startSentry }));
     vi.doMock('pg', () => ({
       default: {
         Pool: class {
@@ -42,10 +44,12 @@ describe('server entrypoint', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.doUnmock('./index.js');
+    vi.doUnmock('./sentry.js');
     vi.doUnmock('pg');
     vi.resetModules();
     listen.mockReset();
     buildServer.mockClear();
+    startSentry.mockClear();
     query.mockReset();
     poolConfigs.length = 0;
   });
@@ -64,6 +68,20 @@ describe('server entrypoint', () => {
     await import('./main.js');
 
     expect(listen).toHaveBeenCalledWith({ port: 3000, host: '0.0.0.0' });
+  });
+
+  it('starts Sentry with SENTRY_DSN before building the app', async () => {
+    vi.stubEnv('SENTRY_DSN', 'https://public@sentry.example/1');
+
+    await import('./main.js');
+
+    expect(startSentry).toHaveBeenCalledWith(
+      'https://public@sentry.example/1',
+      process.env,
+    );
+    expect(startSentry.mock.invocationCallOrder[0]).toBeLessThan(
+      buildServer.mock.invocationCallOrder[0]!,
+    );
   });
 
   it('serves the prototype build and the client build', async () => {
