@@ -10,18 +10,20 @@ export type VerbId = string;
 export type NeedId = string;
 export type SpriteRef = string;
 
-export type Category =
-  | 'food'
-  | 'toy'
-  | 'structure'
-  | 'gadget'
-  | 'plant'
-  | 'critter'
-  | 'hazard'
-  | 'terrain'
-  | 'sky'
-  | 'kith'
-  | 'robot';
+export const CATEGORIES = [
+  'food',
+  'toy',
+  'structure',
+  'gadget',
+  'plant',
+  'critter',
+  'hazard',
+  'terrain',
+  'sky',
+  'kith',
+  'robot',
+] as const;
+export type Category = (typeof CATEGORIES)[number];
 
 export interface Body {
   readonly w: number;

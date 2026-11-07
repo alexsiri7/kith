@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { AffordanceDef } from './affordance.js';
-import { attend, decide, feedback, mindOf, think } from './brain.js';
+import { attend, decide, feedback, intend, mindOf, think } from './brain.js';
 import type { Command } from './command.js';
 import { createEntity, type EntityInit, type EntityType } from './entity.js';
 import type { GameEvent } from './event.js';
 import { mindShape, type Mind, type MindDef } from './mind.js';
 import { createRegistry } from './registry.js';
 import { step, type Presence, type StepContext } from './step.js';
+import type { Target } from './target.js';
 import { createWorld, type World } from './world.js';
 
 const HOUR = 3_600_000;
@@ -252,7 +253,10 @@ describe('a mind', () => {
             state: z.object({ needs: z.object({}).default({}) }),
             mind: {
               ...mind,
-              instincts: { thirst: { drink: { food: 1 } } },
+              instincts: {
+                thirst: { drink: { food: 1 } },
+                hunger: { eat: { fruit: 1 } as Record<string, number> },
+              },
             },
           },
         ],
@@ -263,6 +267,7 @@ describe('a mind', () => {
     for (const problem of [
       'type "kith" mind uses unknown need "thirst"',
       'type "kith" mind has an instinct for unknown verb "drink"',
+      'type "kith" mind has an instinct for unknown category "fruit"',
       'type "kith" mind drifts need "hunger", which its state lacks',
     ]) {
       expect(create).toThrow(problem);
@@ -400,6 +405,19 @@ describe('decision', () => {
       ['eat', 'apple'],
       ['wander', null],
     ]);
+  });
+
+  it('offers the hand only when no feared zone lies on the way', () => {
+    const lonely = (opinion: number) =>
+      garden(
+        { needs: needs({ lonely: 0.8 }), opinions: { pond: opinion } },
+        { id: 'pond', type: 'pond', x: 1100 },
+      );
+    const presence = { watching: true, cameraX: 0, handX: 1300 } as const;
+    const verbs = (world: World) =>
+      decide(world, registry, 'pip', presence).options.map((o) => o.verb);
+    expect(verbs(lonely(0))).toContain('approach');
+    expect(verbs(lonely(-0.6))).not.toContain('approach');
   });
 
   it('adds noise from the behaviour stream that grows with youth', () => {
@@ -569,6 +587,17 @@ describe('biases', () => {
     });
   });
 
+  it('scopes a cortex intent to the entity or zone it names', () => {
+    const world = garden({}, { id: 'pond', type: 'pond', x: 1100 });
+    const targets = (target: Target) =>
+      mindOf(intend(world, registry, 'pip', 'poke', target), 'pip').biases.map(
+        (bias) => bias.target,
+      );
+    expect(targets({ kind: 'zone', id: 'pond' })).toEqual(['pond']);
+    expect(targets({ kind: 'entity', id: 'pond' })).toEqual(['pond']);
+    expect(targets({ kind: 'player' })).toEqual([undefined]);
+  });
+
   it('spends a wish once the Kith has done it', () => {
     const world = garden(
       { needs: needs({ bored: 0.1 }) },
@@ -613,6 +642,14 @@ describe('movement and zones', () => {
     expect(at(out)).toBeLessThan(1050);
   });
 
+  it('is held in the zone under its continuous effects, per second', () => {
+    const wet = run(across(0), 8_000).world;
+    const before = mindOf(wet, 'pip').needs.hunger!;
+    const held = mindOf(run(wet, 1_000).world, 'pip');
+    expect(held.inZone).not.toBeNull();
+    expect(held.needs.hunger! - before).toBeCloseTo(0.01 + 0.1 / 3600, 5);
+  });
+
   it('stops at the bank of a zone it fears', () => {
     const wandering = garden(
       {
@@ -653,6 +690,24 @@ describe('movement and zones', () => {
     const { events } = run(world, 25_000);
     expect(events.some((e) => e.type === 'fellIn')).toBe(false);
     expect(run(world, 25_000).world.entities.apple).toBeUndefined();
+  });
+});
+
+describe('fleeing', () => {
+  const fleeing = (x: number) =>
+    garden(
+      { x, fleeing: { from: 'nettle', until: NOW + 10_000 } },
+      { id: 'nettle', type: 'nettle', x: x + 50 },
+    );
+
+  it('runs away from what it flees until the time is up', () => {
+    const fled = run(fleeing(1000), 9_000).world;
+    expect(at(fled)).toBe(1000 - 9 * 10);
+    expect(mindOf(fled, 'pip').act).toBeNull();
+  });
+
+  it('stays within the bounds it can move in', () => {
+    expect(at(run(fleeing(30), 9_000).world)).toBe(0);
   });
 });
 

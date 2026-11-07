@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import {
+  CATEGORIES,
   formatIssues,
-  type Category,
   type NeedId,
   type VerbId,
 } from './entity.js';
@@ -14,13 +14,17 @@ export const ACTIVITIES = ['idle', 'wander', 'sleep', 'approach'] as const;
 export type Activity = (typeof ACTIVITIES)[number];
 
 /** `self` keys what a mind does alone, `player` what it does at the hand. */
-export type ValueCategory = Category | 'self' | 'player';
+export const VALUE_CATEGORIES = [...CATEGORIES, 'self', 'player'] as const;
+export type ValueCategory = (typeof VALUE_CATEGORIES)[number];
 
 export type Levels = Readonly<Record<NeedId, number>>;
 
 /** `[need][verb][category]`: how much doing it is worth to that need. */
 export type ValueTable = Readonly<
-  Record<NeedId, Readonly<Record<VerbId, Readonly<Record<string, number>>>>>
+  Record<
+    NeedId,
+    Readonly<Record<VerbId, Readonly<Partial<Record<ValueCategory, number>>>>>
+  >
 >;
 
 /** Rates are per game hour. */
@@ -171,12 +175,13 @@ const targetSchema = z.discriminatedUnion('kind', [
 ]);
 
 const levels = z.record(z.string(), z.number().min(0).max(1));
+const valueCategory = z.enum(VALUE_CATEGORIES);
 
 const act = z.object({
   verb: z.string(),
   target: targetSchema.nullable(),
   type: z.string().nullable(),
-  category: z.string(),
+  category: valueCategory,
   /** The need that was strongest when the act was chosen. */
   need: z.string(),
   before: levels,
@@ -226,7 +231,10 @@ export const mindShape = {
     .nullable()
     .default(null),
   values: z
-    .record(z.string(), z.record(z.string(), z.record(z.string(), z.number())))
+    .record(
+      z.string(),
+      z.record(z.string(), z.partialRecord(valueCategory, z.number())),
+    )
     .default({}),
   /** By type: what it has come to think of that kind of thing, in [-1, 1]. */
   opinions: z.record(z.string(), z.number().min(-1).max(1)).default({}),
@@ -239,7 +247,7 @@ export const mindShape = {
     .object({
       verb: z.string(),
       type: z.string().nullable(),
-      category: z.string(),
+      category: valueCategory,
       need: z.string(),
       end: z.number(),
     })
@@ -312,10 +320,18 @@ export function mindProblems(
     }
   }
   const activities: ReadonlySet<string> = new Set(ACTIVITIES);
+  const categories: ReadonlySet<string> = new Set(VALUE_CATEGORIES);
   for (const verbs of Object.values(def.instincts)) {
-    for (const verb of Object.keys(verbs)) {
+    for (const [verb, values] of Object.entries(verbs)) {
       if (!known.verbs.has(verb) && !activities.has(verb)) {
         problems.push(`mind has an instinct for unknown verb "${verb}"`);
+      }
+      for (const category of Object.keys(values)) {
+        if (!categories.has(category)) {
+          problems.push(
+            `mind has an instinct for unknown category "${category}"`,
+          );
+        }
       }
     }
   }

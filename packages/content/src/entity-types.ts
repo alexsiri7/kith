@@ -205,8 +205,6 @@ export const ENTITY_TYPES: readonly EntityType[] = [
       ...mindShape,
       name: z.string().default(''),
       stage: z.enum(KITH_STAGES).default('egg'),
-      alive: z.boolean().default(true),
-      health: z.number().default(1),
       hatchAt: z.number().nullable().default(null),
       born: z.number().nullable().default(null),
       dies: z.number().nullable().default(null),

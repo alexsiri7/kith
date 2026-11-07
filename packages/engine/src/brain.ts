@@ -158,7 +158,7 @@ export function valueOf(
   def: MindDef,
   need: string,
   verb: VerbId,
-  category: string,
+  category: ValueCategory,
 ): number {
   return (
     mind.values[need]?.[verb]?.[category] ??
@@ -172,7 +172,7 @@ function worth(
   mind: Mind,
   def: MindDef,
   verb: VerbId,
-  category: string,
+  category: ValueCategory,
 ): number {
   let total = 0;
   for (const [need, level] of Object.entries(mind.needs)) {
@@ -245,6 +245,19 @@ function fears(mind: Mind, def: MindDef, type: TypeId): boolean {
   );
 }
 
+/** Whether the way from `from` to `to` crosses no zone the mind fears. */
+function reachable(
+  zones: readonly Zone[],
+  mind: Mind,
+  def: MindDef,
+  from: number,
+  to: number,
+): boolean {
+  return !crossings(zones, from, to).some((zone) =>
+    fears(mind, def, zone.type),
+  );
+}
+
 function perceives(def: MindDef, me: Entity, other: Entity, type: EntityType) {
   return (
     type.perception.sky === true ||
@@ -284,9 +297,7 @@ export function attend(
     if (x === undefined) continue;
     const opinion = mind.opinions[type.id] ?? 0;
     if (opinion < def.attention.avoidBelow) continue;
-    if (crossings(zones, me.x, x).some((zone) => fears(mind, def, zone.type))) {
-      continue;
-    }
+    if (!reachable(zones, mind, def, me.x, x)) continue;
     const verbs = type.affordances
       .map((affordance) => affordance.verb)
       .filter(
@@ -374,7 +385,11 @@ export function decide(
     activities.wander.base + activities.wander.curiosity * curiosity,
   );
   if (anyAbove(mind.needs, activities.sleep.whenAbove)) alone('sleep', 0);
-  if (presence.watching && presence.handX !== null) {
+  if (
+    presence.watching &&
+    presence.handX !== null &&
+    reachable(zonesOf(world, registry), mind, def, me.x, presence.handX)
+  ) {
     add(
       {
         verb: 'approach',
@@ -415,7 +430,7 @@ function learn(
   self: Self,
   need: string,
   verb: VerbId,
-  category: string,
+  category: ValueCategory,
   delta: number,
   events: GameEvent[],
 ): Mind {
@@ -985,7 +1000,7 @@ function addBiases(
   return withMind(world, self, { biases: [...biases, ...added] });
 }
 
-/** A cortex intent: a time-limited bias toward `verb`, on `target` when it is an entity. */
+/** A cortex intent: a time-limited bias toward `verb`, on `target` when it is an entity or zone. */
 export function intend(
   world: World,
   registry: Registry,
@@ -999,7 +1014,7 @@ export function intend(
   return addBiases(world, self, () => true, [
     {
       verb,
-      ...(target.kind === 'entity' && { target: target.id }),
+      ...('id' in target && { target: target.id }),
       until: world.clock.simTime + ms,
       strength,
     },
