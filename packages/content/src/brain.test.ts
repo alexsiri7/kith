@@ -79,37 +79,44 @@ const bored = {
 };
 
 describe('a Kith’s brain on the garden’s content', () => {
-  it('avoids the hive once it has been stung twice', () => {
-    // A slow learner: one sting is not enough to put it off.
-    const genome = {
-      curiosity: 0.5,
-      hardiness: 0.5,
-      sociability: 0.5,
-      learnRate: 0.7,
-    };
-    const start = garden(
-      600,
-      { needs: bored, genome },
-      { id: 'hive', type: 'beehive', x: 1000 },
-    );
-    const stung = runUntil(
-      start,
-      (e) => count(e, 'stung') === 2,
-      12 * 60 * MINUTE,
-    );
-    expect(count(stung.events, 'stung')).toBe(2);
-    const opinion = mindOf(stung.world, 'pip').opinions.beehive!;
-    expect(opinion).toBeLessThan(KITH_MIND.attention.avoidBelow);
-    expect(attend(stung.world, registry, 'pip')).toEqual([]);
+  // Simulates up to eighteen hours a second at a time: seconds of CPU, more
+  // than vitest's default budget allows on a loaded CI runner.
+  it(
+    'avoids the hive once it has been stung twice',
+    { timeout: 30_000 },
+    () => {
+      // A slow learner: one sting is not enough to put it off.
+      const genome = {
+        curiosity: 0.5,
+        hardiness: 0.5,
+        sociability: 0.5,
+        learnRate: 0.7,
+      };
+      const start = garden(
+        600,
+        { needs: bored, genome },
+        { id: 'hive', type: 'beehive', x: 1000 },
+      );
+      const stung = runUntil(
+        start,
+        (e) => count(e, 'stung') === 2,
+        12 * 60 * MINUTE,
+      );
+      expect(count(stung.events, 'stung')).toBe(2);
+      const opinion = mindOf(stung.world, 'pip').opinions.beehive!;
+      expect(opinion).toBeLessThan(KITH_MIND.attention.avoidBelow);
+      expect(attend(stung.world, registry, 'pip')).toEqual([]);
 
-    const after = runUntil(
-      stung.world,
-      (events, world) => goingFor(world, 'hive') || count(events, 'stung') > 0,
-      6 * 60 * MINUTE,
-    );
-    expect(goingFor(after.world, 'hive')).toBe(false);
-    expect(count(after.events, 'stung')).toBe(0);
-  });
+      const after = runUntil(
+        stung.world,
+        (events, world) =>
+          goingFor(world, 'hive') || count(events, 'stung') > 0,
+        6 * 60 * MINUTE,
+      );
+      expect(goingFor(after.world, 'hive')).toBe(false);
+      expect(count(after.events, 'stung')).toBe(0);
+    },
+  );
 
   it('stops at the river bank once it has fallen in twice', () => {
     const start = garden(
