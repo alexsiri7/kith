@@ -1,5 +1,12 @@
 import type { Target } from './target.js';
+import type { VerbId } from './entity.js';
 import type { EntityId } from './world.js';
+
+/** An affordance Claude would like the Kith to do, on `target` or on anything. */
+export interface Wish {
+  readonly verb: VerbId;
+  readonly target?: EntityId;
+}
 
 export type Command =
   | { readonly type: 'tickle' }
@@ -32,7 +39,7 @@ export type Command =
   | {
       readonly type: 'setWants';
       readonly kith: EntityId;
-      readonly wants: readonly string[];
+      readonly wants: readonly Wish[];
     }
   | {
       readonly type: 'applyNight';

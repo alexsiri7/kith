@@ -1,8 +1,14 @@
-import type { AffordanceDef, EntityType } from '@kith/engine';
+import {
+  GARDEN_TIME_SCALE,
+  mindShape,
+  type AffordanceDef,
+  type EntityType,
+} from '@kith/engine';
 import { z } from 'zod';
+import { KITH_MIND } from './tunables.js';
 
-// Body sizes and salience are placeholders until the brain (#8) and art (#17)
-// tune them.
+// Body sizes and salience are placeholders until art (#17) tunes them; the
+// brain does not weigh salience yet.
 
 const foodState = z.object({
   born: z.number().default(0),
@@ -14,6 +20,8 @@ const toyState = z.object({});
 const handheld = { carryable: true, draggable: true } as const;
 
 const HOUR_MS = 3_600_000;
+/** The prototype counted these durations in real milliseconds. */
+const REAL = GARDEN_TIME_SCALE;
 
 function item(
   category: 'food' | 'toy',
@@ -44,7 +52,11 @@ const spinTop: AffordanceDef = {
   outcomes: [
     {
       effects: [
-        { kind: 'setState', field: 'spinUntil', value: { sum: ['now', 8000] } },
+        {
+          kind: 'setState',
+          field: 'spinUntil',
+          value: { sum: ['now', 8_000 * REAL] },
+        },
       ],
       valence: 0.1,
     },
@@ -101,8 +113,8 @@ const pokeHive: AffordanceDef = {
       effects: [
         { kind: 'health', delta: -0.05 },
         { kind: 'need', need: 'fear', delta: 0.5 },
-        { kind: 'swarm', ms: 6000 },
-        { kind: 'flee', ms: 8000 },
+        { kind: 'swarm', ms: 6_000 * REAL },
+        { kind: 'flee', ms: 8_000 * REAL },
         { kind: 'emit', event: 'stung' },
       ],
       valence: -0.7,
@@ -190,6 +202,7 @@ export const ENTITY_TYPES: readonly EntityType[] = [
     category: 'kith',
     meaning: 'friend',
     state: z.object({
+      ...mindShape,
       name: z.string().default(''),
       stage: z.enum(KITH_STAGES).default('egg'),
       alive: z.boolean().default(true),
@@ -213,20 +226,6 @@ export const ENTITY_TYPES: readonly EntityType[] = [
           lonely: 0.3,
           fear: 0,
         }),
-      sickUntil: z.number().default(0),
-      fleeing: z
-        .object({ from: z.string(), until: z.number() })
-        .nullable()
-        .default(null),
-      biases: z
-        .array(
-          z.object({
-            verb: z.string(),
-            until: z.number(),
-            strength: z.number(),
-          }),
-        )
-        .default([]),
       lexicon: z
         .record(
           z.string(),
@@ -237,6 +236,7 @@ export const ENTITY_TYPES: readonly EntityType[] = [
     body: { w: 24, h: 28 },
     perception: { salience: 1, moving: true },
     affordances: [],
+    mind: KITH_MIND,
     sprite: 'kith',
   },
   {
@@ -271,7 +271,21 @@ export const ENTITY_TYPES: readonly EntityType[] = [
     body: { w: 120, h: 40 },
     perception: { salience: 0.8 },
     affordances: [],
-    zone: { kind: 'hazard', passableWhen: 'bridge' },
+    zone: {
+      kind: 'hazard',
+      passableWhen: 'bridge',
+      fallIn: {
+        effects: [
+          { kind: 'need', need: 'cold', delta: 0.35 },
+          { kind: 'need', need: 'fear', delta: 0.6 },
+          { kind: 'health', delta: -0.06 },
+          { kind: 'emit', event: 'fellIn' },
+        ],
+        valence: -0.4,
+        ms: 7_000 * REAL,
+        continuous: [{ kind: 'need', need: 'cold', delta: 0.25 / REAL }],
+      },
+    },
     sprite: 'river',
   },
   {

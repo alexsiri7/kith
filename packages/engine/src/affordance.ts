@@ -290,6 +290,24 @@ function effectProblems(effect: Effect, known: KnownContent): string[] {
 }
 
 /**
+ * Checks effects that no affordance declares, such as a zone's fall-in, whose
+ * target is the declaring entity, phrased to follow `type "<id>" `.
+ */
+export function effectListProblems(
+  effects: EffectList,
+  defaults: Readonly<Record<string, unknown>>,
+  known: KnownContent,
+): string[] {
+  return [
+    ...effects.flatMap((effect) => effectProblems(effect, known)),
+    ...effects
+      .flatMap(effectRefs)
+      .map((ref) => fieldProblem(ref, defaults))
+      .filter((problem) => problem !== undefined),
+  ];
+}
+
+/**
  * Checks one type's affordances against the known content and the type's
  * default state, returning problems phrased to follow `type "<id>" `.
  */

@@ -1,0 +1,126 @@
+import { GARDEN_TIME_SCALE, type MindDef } from '@kith/engine';
+
+// The prototype's numbers (packages/legacy-sim). It counted durations and
+// speeds in real time at GARDEN_TIME_SCALE; here they are game time.
+const REAL = GARDEN_TIME_SCALE;
+const HOUR_MS = 3_600_000;
+
+/** How a Kith's mind works: its needs, attention, choices and learning. */
+export const KITH_MIND: MindDef = {
+  needs: {
+    hunger: {
+      awake: 0.05,
+      asleep: 0.03,
+      genome: { trait: 'hardiness', base: 1.2, per: -0.4 },
+    },
+    // Until weather (#10) gives it exposure to ease towards, cold eases to 0.
+    cold: { awake: 0, asleep: 0, ease: 0.6 },
+    tired: { awake: 0.05, asleep: -0.14 },
+    bored: { awake: 0.1, asleep: 0 },
+    lonely: {
+      // 0.07 an hour, at 0.6 while Tock sits with it.
+      awake: 0.07 * 0.6,
+      asleep: 0.07 * 0.6,
+      watched: { far: 0.02, nearHand: -0.4, within: 110 },
+      genome: { trait: 'sociability', base: 0.5, per: 1 },
+      stage: { baby: 1.3 },
+    },
+    fear: { awake: -0.5, asleep: -0.5 },
+  },
+  health: {
+    harm: [
+      { need: 'hunger', above: 0.85, perHour: 0.05 },
+      { need: 'cold', above: 0.75, perHour: 0.08 },
+    ],
+    heal: { perHour: 0.03, below: { hunger: 0.6, cold: 0.5 } },
+  },
+  movement: {
+    speed: { baby: 35 / REAL, elder: 40 / REAL },
+    defaultSpeed: 60 / REAL,
+    slow: [{ need: 'cold', above: 0.6, factor: 0.6 }],
+    sickFactor: 0.55,
+    arriveWithin: 14,
+    bounds: [40, 2360],
+    fleeDistance: 200,
+    bank: { stop: 8, climbOut: 14 },
+  },
+  sleep: {
+    fallAsleepAbove: { tired: 0.92 },
+    wake: {
+      below: { tired: 0.06 },
+      above: { fear: 0.6, hunger: 0.8, cold: 0.6 },
+    },
+  },
+  attention: {
+    // The prototype's Kith knew the whole 2400 px garden.
+    range: 2400,
+    attend: 3,
+    curiosity: 0.3,
+    distance: 1 / 2500,
+    avoidBelow: -0.35,
+  },
+  decision: {
+    noise: { baby: 0.35, child: 0.22 },
+    defaultNoise: 0.12,
+    pursueMs: 40_000 * REAL,
+  },
+  activities: {
+    idle: { base: 0.05, ms: [4_000 * REAL, 8_000 * REAL] },
+    wander: {
+      base: 0.08,
+      curiosity: 0.1,
+      range: 700,
+      ms: [10_000 * REAL, 20_000 * REAL],
+    },
+    sleep: { whenAbove: { tired: 0.45 } },
+    approach: { ms: 15_000 * REAL, relief: { lonely: -0.3 } },
+  },
+  instincts: {
+    hunger: { eat: { food: 0.3 }, use: { gadget: 0.06 } },
+    cold: { 'rest-in': { structure: 0.25 } },
+    tired: { sleep: { self: 0.45 }, 'rest-in': { structure: 0.15 } },
+    bored: {
+      play: { toy: 0.35 },
+      spin: { toy: 0.35 },
+      poke: { hazard: 0.3, plant: 0.3, critter: 0.3 },
+      chase: { critter: 0.3 },
+      use: { gadget: 0.12 },
+    },
+    lonely: { approach: { player: 0.45 }, hug: { toy: 0.25 } },
+    fear: {
+      'rest-in': { structure: 0.15 },
+      approach: { player: 0.25 },
+      hug: { toy: 0.2 },
+    },
+  },
+  learning: {
+    rate: 0.3,
+    minNeed: 0.2,
+    gain: 4,
+    range: [-0.3, 1],
+    values: [-0.5, 1.2],
+    skill: { learned: 0.5, unlearned: 0.15 },
+  },
+  zoneFear: { base: 0.35, curiosity: 0.3 },
+  feedback: {
+    windowMs: 10_000 * REAL,
+    rate: 0.3,
+    tickle: {
+      reward: 0.6,
+      needs: { bored: -0.1, lonely: -0.15 },
+      comfort: { when: { fear: 0.4, cold: 0.5 }, needs: { fear: -0.3 } },
+    },
+    scold: {
+      reward: -0.7,
+      needs: { fear: 0.15 },
+      opinion: -0.25,
+      zone: { within: 90, opinion: -0.15 },
+    },
+  },
+  biases: {
+    // A want lasted a garden day, or until done.
+    wish: { ms: 24 * HOUR_MS, strength: 0.45 },
+    // As strong and as long as an obeyed command.
+    cortex: { ms: 30_000 * REAL, strength: 1.5 },
+  },
+};

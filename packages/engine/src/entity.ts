@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import type { AffordanceDef } from './affordance.js';
+import type { AffordanceDef, EffectList, OutcomeResult } from './affordance.js';
+import type { MindDef } from './mind.js';
 import type { Registry } from './registry.js';
 import type { EntityId } from './world.js';
 
@@ -47,6 +48,16 @@ export interface Perception {
 export interface ZoneDef {
   readonly kind: 'hazard';
   readonly passableWhen?: string;
+  /** What befalls an actor that walks in while it is impassable. */
+  readonly fallIn: ZoneFallIn;
+}
+
+/** Its effects act on the actor, with the zone's entity as the target. */
+export interface ZoneFallIn extends OutcomeResult {
+  /** How long the zone holds the actor before it climbs out where it came in. */
+  readonly ms: number;
+  /** Applied while held, per second like an affordance's `continuous`. */
+  readonly continuous?: EffectList;
 }
 
 export interface EntityType<S = unknown> {
@@ -59,6 +70,8 @@ export interface EntityType<S = unknown> {
   readonly perception: Perception;
   readonly affordances: readonly AffordanceDef[];
   readonly zone?: ZoneDef;
+  /** Makes each entity of the type think for itself every step. */
+  readonly mind?: MindDef;
   readonly sprite: SpriteRef;
 }
 
