@@ -1,3 +1,4 @@
+import { feedback, intend, think, wish } from './brain.js';
 import type { Command } from './command.js';
 import type { GameEvent } from './event.js';
 import { interact } from './interact.js';
@@ -28,11 +29,13 @@ export const CATCH_UP_STEP_MS = 60_000;
 
 /**
  * Advances the world by `dtMs` game milliseconds, applying `commands` in
- * order. Pure: returns a new world and never mutates its input.
+ * order, then lets every entity whose type declares a mind think. Pure:
+ * returns a new world and never mutates its input.
  *
  * `use` is the player's interaction through the target's affordances and
- * does nothing when refused. Other commands that act on entities have no
- * effect yet.
+ * does nothing when refused. `tickle` and `scold` reach the selected Kith;
+ * `cortexIntent` and `setWants` bias a Kith's choices. Other commands that
+ * act on entities have no effect yet.
  */
 export function step(
   world: World,
@@ -61,7 +64,28 @@ export function step(
         next = result.world;
         events.push(...result.events);
       }
+    } else if (command.type === 'tickle' || command.type === 'scold') {
+      if (next.selectedKith !== null) {
+        const result = feedback(
+          next,
+          ctx.registry,
+          next.selectedKith,
+          command.type,
+        );
+        next = result.world;
+        events.push(...result.events);
+      }
+    } else if (command.type === 'cortexIntent') {
+      const { kith, verb, target } = command;
+      next = intend(next, ctx.registry, kith, verb, target);
+    } else if (command.type === 'setWants') {
+      next = wish(next, ctx.registry, command.kith, command.wants);
     }
+  }
+  for (const id of Object.keys(next.entities)) {
+    const result = think(next, ctx.registry, ctx.presence, id, dtMs);
+    next = result.world;
+    events.push(...result.events);
   }
   return { world: next, events };
 }

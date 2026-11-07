@@ -1,5 +1,6 @@
 import {
   affordanceProblems,
+  effectListProblems,
   type CustomEffect,
   type KnownContent,
 } from './affordance.js';
@@ -11,6 +12,7 @@ import {
   type TypeId,
   type VerbId,
 } from './entity.js';
+import { mindProblems } from './mind.js';
 
 export interface ContentDefinitions {
   readonly types: readonly EntityType[];
@@ -60,11 +62,28 @@ function typeProblems(type: EntityType, known: KnownContent): string[] {
   for (const problem of affordanceProblems(type.affordances, state, known)) {
     problems.push(`type "${type.id}" ${problem}`);
   }
-  const field = type.zone?.passableWhen;
+  const { zone, mind } = type;
+  const field = zone?.passableWhen;
   if (field !== undefined && typeof state[field] !== 'boolean') {
     problems.push(
       `type "${type.id}" zone is passable when "${field}", which is not a boolean state field`,
     );
+  }
+  if (zone !== undefined) {
+    const effects = [...zone.fallIn.effects, ...(zone.fallIn.continuous ?? [])];
+    if (!(zone.fallIn.ms >= 0)) {
+      problems.push(
+        `type "${type.id}" zone holds for invalid ${zone.fallIn.ms} ms`,
+      );
+    }
+    for (const problem of effectListProblems(effects, state, known)) {
+      problems.push(`type "${type.id}" zone fall-in ${problem}`);
+    }
+  }
+  if (mind !== undefined) {
+    for (const problem of mindProblems(mind, defaults.data, known)) {
+      problems.push(`type "${type.id}" ${problem}`);
+    }
   }
   return problems;
 }

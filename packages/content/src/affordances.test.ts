@@ -1,6 +1,7 @@
 import {
   createEntity,
   createWorld,
+  GARDEN_TIME_SCALE,
   interact,
   serialiseWorld,
   step,
@@ -109,12 +110,12 @@ describe('beehive poke', () => {
     const until = (ms: number) => NOW + ms;
     expect(stateOf(world, 'pip')).toMatchObject({
       health: 0.95,
-      fleeing: { from: 'hive', until: until(8000) },
+      fleeing: { from: 'hive', until: until(8_000 * GARDEN_TIME_SCALE) },
     });
     expect(needsOf(world).fear).toBe(0.5);
     expect(stateOf(world, 'hive').swarm).toEqual({
       victim: 'pip',
-      until: until(6000),
+      until: until(6_000 * GARDEN_TIME_SCALE),
     });
     expect(events).toEqual([{ type: 'stung', actor: 'pip', target: 'hive' }]);
     expect(valence).toBe(-0.7);
@@ -181,7 +182,9 @@ describe('top spin', () => {
     const world = garden(1, { id: 'top', type: 'top', x: 5 });
     for (const actor of [player, pip]) {
       const spun = resolved(world, { actor, target: 'top', verb: 'spin' });
-      expect(stateOf(spun.world, 'top').spinUntil).toBe(NOW + 8000);
+      expect(stateOf(spun.world, 'top').spinUntil).toBe(
+        NOW + 8_000 * GARDEN_TIME_SCALE,
+      );
     }
   });
 });

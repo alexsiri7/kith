@@ -53,6 +53,11 @@ export type GameEvent =
       readonly skill: string;
     }
   | {
+      readonly type: 'unlearnedSkill';
+      readonly actor: EntityId;
+      readonly skill: string;
+    }
+  | {
       readonly type: 'learnedWord';
       readonly actor: EntityId;
       readonly word: string;

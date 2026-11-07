@@ -3,6 +3,7 @@ import type {
   AffordanceDef,
   Effect,
   EffectContext,
+  EffectList,
   Expr,
   Predicate,
   Subject,
@@ -491,6 +492,28 @@ function scaled(effect: Effect, seconds: number): Effect {
   }
 }
 
+/**
+ * Applies effects that no affordance declares, such as a zone's, scaling
+ * per-second amounts by `seconds` when given.
+ */
+export function affect(
+  world: World,
+  registry: Registry,
+  ctx: EffectContext,
+  effects: EffectList,
+  seconds?: number,
+): { readonly world: World; readonly events: readonly GameEvent[] } {
+  const events: GameEvent[] = [];
+  const applied =
+    seconds === undefined
+      ? effects
+      : effects.map((effect) => scaled(effect, seconds));
+  return {
+    world: applyEffects(world, registry, ctx, applied, events),
+    events,
+  };
+}
+
 /** Applies an affordance's `continuous` effects for `dtMs` spent engaged. */
 export function engage(
   world: World,
@@ -506,13 +529,14 @@ export function engage(
     } {
   const check = checkInteraction(world, registry, interaction);
   if (!check.ok) return check;
-  const effects = (check.affordance.continuous ?? []).map((effect) =>
-    scaled(effect, dtMs / 1000),
-  );
-  const events: GameEvent[] = [];
   return {
     ok: true,
-    world: applyEffects(world, registry, interaction, effects, events),
-    events,
+    ...affect(
+      world,
+      registry,
+      interaction,
+      check.affordance.continuous ?? [],
+      dtMs / 1000,
+    ),
   };
 }

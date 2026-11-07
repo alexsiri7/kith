@@ -29,7 +29,11 @@ const river: EntityType = {
   body: { w: 120, h: 40 },
   perception: { salience: 0.8 },
   affordances: [],
-  zone: { kind: 'hazard', passableWhen: 'bridge' },
+  zone: {
+    kind: 'hazard',
+    passableWhen: 'bridge',
+    fallIn: { effects: [], valence: -0.4, ms: 1000 },
+  },
   sprite: 'river',
 };
 
@@ -154,6 +158,36 @@ describe('createRegistry', () => {
       'type "hive" poke reads unknown state field "swarm"',
       'type "hive" poke changes unknown need "thirst"',
       'type "hive" use biases unknown verb "fly"',
+    ]) {
+      expect(create).toThrow(problem);
+    }
+  });
+
+  it('reports zone fall-in problems', () => {
+    const create = () =>
+      createRegistry({
+        types: [
+          {
+            ...river,
+            zone: {
+              kind: 'hazard',
+              fallIn: {
+                effects: [{ kind: 'need', need: 'thirst', delta: 0.1 }],
+                valence: 0,
+                ms: -1,
+                continuous: [{ kind: 'incState', field: 'depth', by: 1 }],
+              },
+            },
+          },
+        ],
+        needs: [],
+        meanings: [],
+        verbs: [],
+      });
+    for (const problem of [
+      'type "river" zone holds for invalid -1 ms',
+      'type "river" zone fall-in changes unknown need "thirst"',
+      'type "river" zone fall-in reads unknown state field "depth"',
     ]) {
       expect(create).toThrow(problem);
     }
