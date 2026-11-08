@@ -78,7 +78,8 @@ const bored = {
   fear: 0,
 };
 
-describe('a Kith’s brain on the garden’s content', () => {
+// Each test steps the simulation for simulated hours, which can outrun the default timeout.
+describe('a Kith’s brain on the garden’s content', { timeout: 60_000 }, () => {
   it('avoids the hive once it has been stung twice', () => {
     // A slow learner: one sting is not enough to put it off.
     const genome = {
