@@ -9,6 +9,7 @@ import type {
 } from './affordance.js';
 import { createEntity, type EntityType } from './entity.js';
 import {
+  affect,
   engage,
   evaluate,
   interact,
@@ -189,6 +190,15 @@ describe('effects', () => {
       { kind: 'incState', field: 'until', by: 5, range: [0, 3] },
     ]);
     expect(thingOf(world)).toMatchObject({ count: 1, until: 3 });
+  });
+
+  it('leaves the world as it is when a value does not change', () => {
+    const { world, registry } = setup({});
+    const ctx = { actor: pip, target: 'thing' };
+    const capped = affect(world, registry, ctx, [
+      { kind: 'incState', field: 'count', by: 1, range: [0, 2] },
+    ]);
+    expect(capped.world).toBe(world);
   });
 
   it('spawn creates an entity of a type at a subject, with state', () => {

@@ -22,7 +22,7 @@ import { socialState } from './relationship.js';
 import { nextFloat } from './rng.js';
 import type { Presence, StepResult } from './step.js';
 import type { Target } from './target.js';
-import type { EntityId, World } from './world.js';
+import { withEntity, type EntityId, type World } from './world.js';
 import { crossings, sideOf, zonesOf, type Zone } from './zone.js';
 
 const HOUR_MS = 3_600_000;
@@ -98,10 +98,7 @@ function withMind(
   }
   const state = { ...entity.state, ...change };
   const moved = x === undefined ? entity : { ...entity, x };
-  return {
-    ...world,
-    entities: { ...world.entities, [self.id]: { ...moved, state } },
-  };
+  return withEntity(world, { ...moved, state });
 }
 
 function roll(world: World): [number, World] {
@@ -254,7 +251,7 @@ export function attend(
     if (other.id === id || other.carriedBy !== undefined || other.heldByPlayer)
       continue;
     const type = registry.types.get(other.type);
-    if (type === undefined) continue;
+    if (type === undefined || type.affordances.length === 0) continue;
     const x = perceives(def, me, other, type) ? other.x : mind.memory[other.id];
     if (x === undefined) continue;
     const opinion = mind.opinions[type.id] ?? 0;
@@ -496,7 +493,8 @@ function choose(world: World, self: Self, presence: Presence): World {
     if (perceives(def, me, other, type)) memory[other.id] = other.x;
     else if (remembered !== undefined) memory[other.id] = remembered;
   }
-  world = withMind(world, self, { memory });
+  // Attention reads memory only for what it does not perceive, where the new
+  // memory holds what the old one did, so memory is written with the act.
   const decided = decide(world, self.registry, self.id, presence);
   world = decided.world;
   const best = decided.options[0]!;
@@ -538,6 +536,7 @@ function choose(world: World, self: Self, presence: Presence): World {
     act = { ...act, until: now + activities.approach.ms };
   }
   return withMind(world, self, {
+    memory,
     act,
     asleep,
     lastScores: decided.options.slice(0, 4).map((option) => ({

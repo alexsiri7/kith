@@ -77,30 +77,33 @@ export function zoneCurrents(
     (zone) => zone.current !== undefined && !zone.passable,
   );
   if (zones.length === 0) return world;
-  const entities: Record<EntityId, Entity> = {};
+  let entities: Record<EntityId, Entity> | undefined;
+  const change = (id: EntityId, entity: Entity | undefined) => {
+    entities ??= { ...world.entities };
+    if (entity === undefined) delete entities[id];
+    else entities[id] = entity;
+  };
   for (const [id, entity] of Object.entries(world.entities)) {
     const type = registry.types.get(entity.type);
-    const loose =
-      type?.mind === undefined &&
-      entity.carriedBy === undefined &&
-      entity.heldByPlayer !== true;
-    const zone = loose
-      ? zones.find((z) => sideOf(z, entity.x) === 0)
-      : undefined;
-    if (zone?.current === undefined) {
-      entities[id] = entity;
-    } else if (type?.body.floats === true) {
+    if (
+      type?.mind !== undefined ||
+      entity.carriedBy !== undefined ||
+      entity.heldByPlayer === true
+    ) {
+      continue;
+    }
+    const zone = zones.find((z) => sideOf(z, entity.x) === 0);
+    if (zone?.current === undefined) continue;
+    if (type?.body.floats === true) {
       const { speed, bank } = zone.current;
       const shore =
         entity.x < (zone.lo + zone.hi) / 2 ? zone.lo - bank : zone.hi + bank;
       const drift = Math.min(Math.abs(shore - entity.x), (speed * dtMs) / 1000);
-      entities[id] = {
-        ...entity,
-        x: entity.x + Math.sign(shore - entity.x) * drift,
-      };
-    } else if (type?.body.sinks !== true) {
-      entities[id] = entity;
+      const x = entity.x + Math.sign(shore - entity.x) * drift;
+      if (x !== entity.x) change(id, { ...entity, x });
+    } else if (type?.body.sinks === true) {
+      change(id, undefined);
     }
   }
-  return { ...world, entities };
+  return entities === undefined ? world : { ...world, entities };
 }

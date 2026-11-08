@@ -19,7 +19,13 @@ import { lexiconOf, listens, teach } from './language.js';
 import type { Registry } from './registry.js';
 import { nextFloat } from './rng.js';
 import { weatherAt } from './weather.js';
-import { addCoins, addMoment, type EntityId, type World } from './world.js';
+import {
+  addCoins,
+  addMoment,
+  withEntity,
+  type EntityId,
+  type World,
+} from './world.js';
 
 export interface Interaction extends EffectContext {
   readonly verb: VerbId;
@@ -76,10 +82,6 @@ function stateOf(entity: Entity): State {
     throw new Error(`${entity.type} ${entity.id} has no state fields`);
   }
   return entity.state;
-}
-
-function withEntity(world: World, entity: Entity): World {
-  return { ...world, entities: { ...world.entities, [entity.id]: entity } };
 }
 
 function actorId(ctx: EffectContext): EntityId | null {
@@ -200,7 +202,8 @@ export function test(
 
 /**
  * Replaces one state field of an entity, then checks the whole state against
- * its type so an effect can never leave an entity invalid.
+ * its type so an effect can never leave an entity invalid. A value that does
+ * not change leaves the world as it is.
  */
 function setField(
   world: World,
@@ -210,7 +213,10 @@ function setField(
   update: (current: unknown) => unknown,
 ): World {
   const entity = entityOf(world, id);
-  const state = { ...stateOf(entity), [name]: update(field(world, id, name)) };
+  const current = field(world, id, name);
+  const value = update(current);
+  if (Object.is(value, current)) return world;
+  const state = { ...stateOf(entity), [name]: value };
   const parsed = registry.types.get(entity.type)?.state.safeParse(state);
   if (parsed === undefined) {
     throw new Error(`Unknown entity type "${entity.type}" for entity ${id}`);

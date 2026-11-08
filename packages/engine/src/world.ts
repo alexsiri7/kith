@@ -95,6 +95,16 @@ export function createWorld(seed: number): World {
   };
 }
 
+/** The world with `entity` added, or in place of the one with its id. */
+export function withEntity(world: World, entity: Entity): World {
+  // Object.assign copies entity maps faster than a spread does once a long
+  // run has made them of many different shapes.
+  return {
+    ...world,
+    entities: Object.assign({}, world.entities, { [entity.id]: entity }),
+  };
+}
+
 export function serialiseWorld(world: World): string {
   return JSON.stringify(world);
 }
