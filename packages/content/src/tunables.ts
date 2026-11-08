@@ -18,7 +18,8 @@ export const KITH_MIND: MindDef = {
       asleep: 0.03,
       genome: { trait: 'hardiness', base: 1.2, per: -0.4 },
     },
-    // Until weather (#10) gives it exposure to ease towards, cold eases to 0.
+    // Until Kith can rest in shelters (#14), exposure to the weather waits,
+    // and cold eases to 0.
     cold: { awake: 0, asleep: 0, ease: 0.6 },
     tired: { awake: 0.05, asleep: -0.14 },
     bored: { awake: 0.1, asleep: 0 },
