@@ -3,9 +3,11 @@ import type { Command } from './command.js';
 import type { GameEvent } from './event.js';
 import { interact } from './interact.js';
 import { hear, languageStep, notice } from './language.js';
+import { runLifecycles } from './lifecycle.js';
 import type { Registry } from './registry.js';
 import { befriend, grieve, socialStep } from './social.js';
 import type { EntityId, World } from './world.js';
+import { zoneCurrents } from './zone.js';
 
 export type Presence =
   | { readonly watching: false }
@@ -27,14 +29,16 @@ export interface StepResult {
   readonly events: readonly GameEvent[];
 }
 
-export const CATCH_UP_STEP_MS = 60_000;
+/** Six game minutes: the prototype's one real minute. */
+export const CATCH_UP_STEP_MS = 360_000;
 
 /**
  * Advances the world by `dtMs` game milliseconds, applying `commands` in
- * order, then lets every entity whose type declares a mind think, every one
- * whose type declares language remember, forget and chatter, and every one
- * whose type declares social life hatch, keep company, warn, lay eggs and
- * grieve. Pure: returns a new world and never mutates its input.
+ * order, then runs every lifecycle and zone current, then lets every entity
+ * whose type declares a mind think, every one whose type declares language
+ * remember, forget and chatter, and every one whose type declares social
+ * life hatch, keep company, warn, lay eggs and grieve. Pure: returns a new
+ * world and never mutates its input.
  *
  * `use` is the player's interaction through the target's affordances and
  * does nothing when refused. `tickle`, `scold`, `say` and `point` reach the
@@ -92,6 +96,9 @@ export function step(
       next = rename(next, ctx.registry, command.kith, command.name);
     }
   }
+  const lived = runLifecycles(next, ctx.registry, world.clock.simTime);
+  next = zoneCurrents(lived.world, ctx.registry, dtMs);
+  events.push(...lived.events);
   for (const id of Object.keys(next.entities)) {
     const result = think(next, ctx.registry, ctx.presence, id, dtMs);
     next = result.world;
@@ -139,7 +146,7 @@ function rename(
   };
 }
 
-/** Steps unattended in coarse one-minute steps up to `toSimTime`. */
+/** Steps unattended in coarse steps of `CATCH_UP_STEP_MS` up to `toSimTime`. */
 export function catchUp(
   world: World,
   registry: Registry,

@@ -18,6 +18,7 @@ import type { GameEvent } from './event.js';
 import { lexiconOf, listens, teach } from './language.js';
 import type { Registry } from './registry.js';
 import { nextFloat } from './rng.js';
+import { weatherAt } from './weather.js';
 import { addCoins, addMoment, type EntityId, type World } from './world.js';
 
 export interface Interaction extends EffectContext {
@@ -129,6 +130,12 @@ const isString = (value: unknown): value is string => typeof value === 'string';
 export function evaluate(world: World, ctx: EffectContext, expr: Expr): number {
   if (typeof expr === 'number') return expr;
   if (expr === 'now') return world.clock.simTime;
+  if ('weather' in expr) return weatherAt(world.seed, world.clock.simTime).temp;
+  if ('count' in expr) {
+    const types = new Set(expr.count);
+    return Object.values(world.entities).filter((e) => types.has(e.type))
+      .length;
+  }
   if ('state' in expr) {
     const id = resolve(world, ctx, expr.of);
     return typed(field(world, id, expr.state), isNumber, `${id}.${expr.state}`);
@@ -157,6 +164,9 @@ export function test(
   ctx: EffectContext,
   predicate: Predicate,
 ): boolean {
+  if ('weather' in predicate) {
+    return weatherAt(world.seed, world.clock.simTime)[predicate.weather];
+  }
   if ('is' in predicate) {
     const id = resolve(world, ctx, predicate.of);
     return typed(
@@ -319,15 +329,29 @@ function applyEffect(
       );
     }
     case 'spawn': {
-      const id = freeId(world, effect.type);
       const near = entityOf(world, resolve(world, ctx, effect.near));
+      let spawning = world.rng.spawning;
+      const draw = () => {
+        const next = nextFloat(spawning);
+        spawning = next.state;
+        return next.value;
+      };
+      const { offsets = [0], spread = 0 } = effect;
+      const offset =
+        offsets.length > 1
+          ? offsets[Math.floor(draw() * offsets.length)]!
+          : offsets[0]!;
+      const jitter = spread > 0 ? (draw() * 2 - 1) * spread : 0;
+      const computed = Object.entries(effect.computed ?? {}).map(
+        ([name, expr]) => [name, evaluate(world, ctx, expr)],
+      );
       const spawned = createEntity(registry, {
-        id,
+        id: freeId(world, effect.type),
         type: effect.type,
-        x: near.x,
-        state: effect.state,
+        x: near.x + offset + jitter,
+        state: { ...effect.state, ...Object.fromEntries(computed) },
       });
-      return withEntity(world, spawned);
+      return withEntity({ ...world, rng: { ...world.rng, spawning } }, spawned);
     }
     case 'remove': {
       const id = resolve(world, ctx, effect.of);

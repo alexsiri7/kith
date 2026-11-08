@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { AffordanceDef, EffectList, OutcomeResult } from './affordance.js';
 import type { LanguageDef } from './language.js';
+import type { LifecycleDef } from './lifecycle.js';
 import type { MindDef } from './mind.js';
 import type { Registry } from './registry.js';
 import type { SocialDef } from './social.js';
@@ -54,6 +55,17 @@ export interface ZoneDef {
   readonly passableWhen?: string;
   /** What befalls an actor that walks in while it is impassable. */
   readonly fallIn: ZoneFallIn;
+  /** What it does to loose things in it while it is impassable. */
+  readonly current?: ZoneCurrent;
+}
+
+/**
+ * Floating bodies drift at `speed` px per second to `bank` px beyond the
+ * nearer edge; sinking bodies are lost.
+ */
+export interface ZoneCurrent {
+  readonly speed: number;
+  readonly bank: number;
 }
 
 /** Its effects act on the actor, with the zone's entity as the target. */
@@ -80,6 +92,8 @@ export interface EntityType<S = unknown> {
   readonly language?: LanguageDef;
   /** Lets each entity of the type bond, warn, raise a family and grieve. */
   readonly social?: SocialDef;
+  /** How each entity of the type grows, regrows, rots or decays by itself. */
+  readonly lifecycle?: LifecycleDef;
   readonly sprite: SpriteRef;
 }
 

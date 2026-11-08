@@ -1,6 +1,7 @@
 import type { MeaningId, NeedId, TypeId, VerbId } from './entity.js';
 import type { GameEvent } from './event.js';
 import type { Target } from './target.js';
+import type { WeatherFlag } from './weather.js';
 import type { EntityId, World } from './world.js';
 
 export type ActorKind = 'kith' | 'player' | 'robot' | 'critter';
@@ -17,16 +18,23 @@ export type Approach = 'touch' | 'near' | 'inside' | 'follow';
  */
 export type Subject = 'actor' | 'target' | { readonly linked: string };
 
-/** A number computed from the world. `'now'` is the current sim time. */
+/**
+ * A number computed from the world. `'now'` is the current sim time,
+ * `weather` the temperature now, and `count` how many entities of the listed
+ * types exist.
+ */
 export type Expr =
   | number
   | 'now'
+  | { readonly weather: 'temp' }
+  | { readonly count: readonly TypeId[] }
   | { readonly state: string; readonly of?: Subject }
   | { readonly sum: readonly Expr[] }
   | { readonly product: readonly Expr[] }
   | { readonly if: Predicate; readonly then: Expr; readonly else: Expr };
 
 export type Predicate =
+  | { readonly weather: WeatherFlag }
   | { readonly is: string; readonly of?: Subject }
   /** Whether a string field holds one of `oneOf`. */
   | {
@@ -82,7 +90,13 @@ export type Effect =
       readonly kind: 'spawn';
       readonly type: TypeId;
       readonly near?: Subject;
+      /** One is picked at random and added to `near`'s x. */
+      readonly offsets?: readonly number[];
+      /** Moves the spawn by up to this many pixels either way, at random. */
+      readonly spread?: number;
       readonly state?: Readonly<Record<string, unknown>>;
+      /** State fields evaluated where the spawner stands, such as `born: 'now'`. */
+      readonly computed?: Readonly<Record<string, Expr>>;
     }
   | { readonly kind: 'remove'; readonly of?: Subject }
   | { readonly kind: 'carry'; readonly of?: Subject }
@@ -179,7 +193,9 @@ function subjectRefs(of: Subject | undefined): FieldRef[] {
 }
 
 function exprRefs(expr: Expr): FieldRef[] {
-  if (typeof expr !== 'object') return [];
+  if (typeof expr !== 'object' || 'weather' in expr || 'count' in expr) {
+    return [];
+  }
   if ('state' in expr) {
     return [
       { field: expr.state, of: expr.of, kind: 'number' },
@@ -196,6 +212,7 @@ function exprRefs(expr: Expr): FieldRef[] {
 }
 
 function predicateRefs(predicate: Predicate): FieldRef[] {
+  if ('weather' in predicate) return [];
   if ('is' in predicate) {
     return [
       { field: predicate.is, of: predicate.of, kind: 'boolean' },
@@ -239,7 +256,10 @@ function effectRefs(effect: Effect): FieldRef[] {
         ...subjectRefs(effect.of),
       ];
     case 'spawn':
-      return subjectRefs(effect.near);
+      return [
+        ...subjectRefs(effect.near),
+        ...Object.values(effect.computed ?? {}).flatMap(exprRefs),
+      ];
     case 'remove':
     case 'carry':
       return subjectRefs(effect.of);
@@ -272,6 +292,28 @@ function subjects(effect: Effect): readonly (Subject | undefined)[] {
   }
 }
 
+function countedTypes(node: Expr | Predicate): TypeId[] {
+  if (typeof node !== 'object') return [];
+  if ('count' in node) return [...node.count];
+  if ('sum' in node) return node.sum.flatMap(countedTypes);
+  if ('product' in node) return node.product.flatMap(countedTypes);
+  if ('if' in node) {
+    return [node.if, node.then, node.else].flatMap(countedTypes);
+  }
+  if ('gt' in node) return node.gt.flatMap(countedTypes);
+  if ('lt' in node) return node.lt.flatMap(countedTypes);
+  if ('not' in node) return countedTypes(node.not);
+  if ('all' in node) return node.all.flatMap(countedTypes);
+  if ('any' in node) return node.any.flatMap(countedTypes);
+  return [];
+}
+
+function countProblems(node: Expr | Predicate, known: KnownContent): string[] {
+  return countedTypes(node)
+    .filter((type) => !known.types.has(type))
+    .map((type) => `counts unknown type "${type}"`);
+}
+
 function fieldProblem(
   ref: FieldRef,
   defaults: Readonly<Record<string, unknown>>,
@@ -292,6 +334,15 @@ function effectProblems(effect: Effect, known: KnownContent): string[] {
     problems.push(`${effect.kind} lasts a negative or invalid ${effect.ms} ms`);
   }
   switch (effect.kind) {
+    case 'setState': {
+      const { value } = effect;
+      if (typeof value === 'object') {
+        problems.push(
+          ...countProblems('test' in value ? value.test : value, known),
+        );
+      }
+      break;
+    }
     case 'need':
       if (!known.needs.has(effect.need)) {
         problems.push(`changes unknown need "${effect.need}"`);
@@ -301,6 +352,17 @@ function effectProblems(effect: Effect, known: KnownContent): string[] {
       if (!known.types.has(effect.type)) {
         problems.push(`spawns unknown type "${effect.type}"`);
       }
+      if (effect.offsets?.length === 0) {
+        problems.push(`spawns ${effect.type} at an empty list of offsets`);
+      }
+      if (!((effect.spread ?? 0) >= 0)) {
+        problems.push(`spawns ${effect.type} with a negative spread`);
+      }
+      problems.push(
+        ...Object.values(effect.computed ?? {}).flatMap((expr) =>
+          countProblems(expr, known),
+        ),
+      );
       break;
     case 'teach':
       if (!known.meanings.has(effect.meaning)) {
@@ -344,6 +406,28 @@ export function effectListProblems(
     ...effects.flatMap((effect) => effectProblems(effect, known)),
     ...effects
       .flatMap(effectRefs)
+      .map((ref) => fieldProblem(ref, defaults))
+      .filter((problem) => problem !== undefined),
+  ];
+}
+
+/**
+ * Checks conditions that no affordance declares, such as a lifecycle rule's,
+ * phrased to follow `type "<id>" `.
+ */
+export function conditionProblems(
+  predicates: readonly Predicate[],
+  exprs: readonly Expr[],
+  defaults: Readonly<Record<string, unknown>>,
+  known: KnownContent,
+): string[] {
+  const refs = [
+    ...predicates.flatMap(predicateRefs),
+    ...exprs.flatMap(exprRefs),
+  ];
+  return [
+    ...[...predicates, ...exprs].flatMap((node) => countProblems(node, known)),
+    ...refs
       .map((ref) => fieldProblem(ref, defaults))
       .filter((problem) => problem !== undefined),
   ];
@@ -399,6 +483,15 @@ export function affordanceProblems(
       if (typeof chance === 'number' && !(chance >= 0 && chance <= 1)) {
         say(`has chance ${chance} outside [0, 1]`);
       }
+    }
+    const conditions = [
+      ...(affordance.available === undefined ? [] : [affordance.available]),
+      ...affordance.outcomes.flatMap((outcome) =>
+        outcome.chance === undefined ? [] : [outcome.chance],
+      ),
+    ];
+    for (const condition of conditions) {
+      for (const problem of countProblems(condition, known)) say(problem);
     }
     for (const effect of effects) {
       for (const problem of effectProblems(effect, known)) say(problem);

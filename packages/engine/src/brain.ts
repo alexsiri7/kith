@@ -1,12 +1,5 @@
 import type { Wish } from './command.js';
-import type {
-  Category,
-  Entity,
-  EntityType,
-  TypeId,
-  VerbId,
-  ZoneFallIn,
-} from './entity.js';
+import type { Category, Entity, EntityType, TypeId, VerbId } from './entity.js';
 import type { GameEvent } from './event.js';
 import {
   affect,
@@ -16,7 +9,6 @@ import {
   type Interaction,
 } from './interact.js';
 import {
-  mindState,
   type Act,
   type Activity,
   type Bias,
@@ -31,6 +23,7 @@ import { nextFloat } from './rng.js';
 import type { Presence, StepResult } from './step.js';
 import type { Target } from './target.js';
 import type { EntityId, World } from './world.js';
+import { crossings, sideOf, zonesOf, type Zone } from './zone.js';
 
 const HOUR_MS = 3_600_000;
 
@@ -64,17 +57,6 @@ export interface Option {
   readonly score: number;
 }
 
-/** A hazard zone's footprint, and whether it is passable now. */
-interface Zone {
-  readonly id: EntityId;
-  readonly type: TypeId;
-  readonly x: number;
-  readonly lo: number;
-  readonly hi: number;
-  readonly passable: boolean;
-  readonly fallIn: ZoneFallIn;
-}
-
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -95,11 +77,15 @@ function selfOf(world: World, registry: Registry, id: EntityId): Self | null {
   return { id, type, def: type.mind, registry };
 }
 
+/**
+ * Unchecked, for speed: states are validated when entities are created, by
+ * every effect and on load, and the brain writes only typed mind fields.
+ */
 export function mindOf(world: World, id: EntityId): Mind {
-  return mindState.parse(entityOf(world, id).state);
+  return entityOf(world, id).state as Mind;
 }
 
-/** Writes mind fields, and optionally x, checking the whole state against the type. */
+/** Writes mind fields, and optionally x. */
 function withMind(
   world: World,
   self: Self,
@@ -110,7 +96,7 @@ function withMind(
   if (!isRecord(entity.state)) {
     throw new Error(`${entity.type} ${entity.id} has no state fields`);
   }
-  const state = self.type.state.parse({ ...entity.state, ...change });
+  const state = { ...entity.state, ...change };
   const moved = x === undefined ? entity : { ...entity, x };
   return {
     ...world,
@@ -211,44 +197,6 @@ function wishedFor(
   return mind.biases.some(
     (bias) => bias.until > now && bias.verb === verb && bias.target === target,
   );
-}
-
-function zonesOf(world: World, registry: Registry): Zone[] {
-  const zones: Zone[] = [];
-  for (const entity of Object.values(world.entities)) {
-    const type = registry.types.get(entity.type);
-    if (type?.zone === undefined) continue;
-    const field = type.zone.passableWhen;
-    const passable =
-      field !== undefined &&
-      isRecord(entity.state) &&
-      entity.state[field] === true;
-    const half = type.body.w / 2;
-    zones.push({
-      id: entity.id,
-      type: type.id,
-      x: entity.x,
-      lo: entity.x - half,
-      hi: entity.x + half,
-      passable,
-      fallIn: type.zone.fallIn,
-    });
-  }
-  return zones;
-}
-
-function sideOf(zone: Zone, x: number): -1 | 0 | 1 {
-  return x < zone.lo ? -1 : x > zone.hi ? 1 : 0;
-}
-
-/** Impassable zones a move from `from` to `to` would enter, nearest first. */
-function crossings(zones: readonly Zone[], from: number, to: number): Zone[] {
-  return zones
-    .filter((zone) => {
-      const side = sideOf(zone, from);
-      return !zone.passable && side !== 0 && sideOf(zone, to) !== side;
-    })
-    .sort((a, b) => Math.abs(a.x - from) - Math.abs(b.x - from));
 }
 
 function fears(mind: Mind, def: MindDef, type: TypeId): boolean {

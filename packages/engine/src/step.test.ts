@@ -133,7 +133,7 @@ describe('step', () => {
 });
 
 describe('catchUp', () => {
-  it('advances to the target time in one-minute steps', () => {
+  it('advances to the target time in catch-up steps', () => {
     const target = 10 * CATCH_UP_STEP_MS + 1234;
     const { world } = catchUp(createWorld(5), registry, target);
     expect(world.clock.simTime).toBe(target);
