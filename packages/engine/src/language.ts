@@ -14,7 +14,7 @@ import type { Registry } from './registry.js';
 import { nextFloat } from './rng.js';
 import type { Presence, StepResult } from './step.js';
 import type { Target } from './target.js';
-import type { EntityId, World } from './world.js';
+import { addCoins, addMoment, type EntityId, type World } from './world.js';
 
 const HOUR_MS = 3_600_000;
 
@@ -212,6 +212,11 @@ interface Speaker {
 
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
+const KIN = 'kin:';
+const kinOf = (id: EntityId): MeaningId => `${KIN}${id}`;
+const kinId = (meaning: MeaningId): EntityId | null =>
+  meaning.startsWith(KIN) ? meaning.slice(KIN.length) : null;
+
 function nameOf(state: unknown): string {
   return typeof state === 'object' &&
     state !== null &&
@@ -337,10 +342,9 @@ export function wordFor(
 }
 
 function isMeaning(world: World, registry: Registry, meaning: MeaningId) {
-  return (
-    registry.meanings.has(meaning) ||
-    (meaning.startsWith('kin:') && meaning.slice(4) in world.entities)
-  );
+  if (registry.meanings.has(meaning)) return true;
+  const kin = kinId(meaning);
+  return kin !== null && kin in world.entities;
 }
 
 /**
@@ -379,20 +383,11 @@ export function teach(
       moments.push(`${kith.name} began to learn your name.`);
     }
   }
-  let coins = world.player.coins;
+  world = moments.reduce((w, text) => addMoment(w, id, text), world);
   if (was < teaching.speakable && is >= teaching.speakable) {
     events.push({ type: 'learnedWord', actor: id, word });
-    coins += teaching.speakableCoins;
+    world = addCoins(world, teaching.speakableCoins);
   }
-  const simTime = world.clock.simTime;
-  world = {
-    ...world,
-    player: { ...world.player, coins },
-    moments: [
-      ...world.moments,
-      ...moments.map((text) => ({ simTime, kith: id, text })),
-    ],
-  };
   return {
     world: withSpeaker(world, kith, {
       lexicon: { ...lexicon, [word]: { meaning, strength: is } },
@@ -440,7 +435,7 @@ function gate(world: World, kith: Speaker, text: string): [string, World] {
     }
     const { meaning } = kith.lang.lexicon[token]!;
     kept.push(
-      speech.properNouns.includes(meaning) || meaning.startsWith('kin:')
+      speech.properNouns.includes(meaning) || kinId(meaning) !== null
         ? token[0]!.toUpperCase() + token.slice(1)
         : token,
     );
@@ -533,7 +528,7 @@ export function meaningFor(
   const entity = world.entities[target.id];
   const type = entity && registry.types.get(entity.type);
   if (type === undefined) return null;
-  if (type.language !== undefined) return `kin:${target.id}`;
+  if (type.language !== undefined) return kinOf(target.id);
   return type.meaning ?? null;
 }
 
@@ -600,7 +595,7 @@ function namedIn(
       continue;
     }
     const type = registry.types.get(entity.type);
-    if (type?.language !== undefined) return `kin:${entity.id}`;
+    if (type?.language !== undefined) return kinOf(entity.id);
     if (type?.meaning !== undefined) return type.meaning;
   }
   return null;
@@ -701,11 +696,12 @@ export function hear(
       candidates.length === 1
         ? candidates[0]
         : candidates.find((word) => lexicon[word]?.meaning === pointed);
+    const kin = kinId(pointed);
     const proper =
       pointed === 'self'
         ? kith.name
-        : pointed.startsWith('kin:')
-          ? nameOf(world.entities[pointed.slice(4)]?.state)
+        : kin !== null
+          ? nameOf(world.entities[kin]?.state)
           : null;
     if (
       pick !== undefined &&
@@ -790,7 +786,7 @@ function spreads(
 ): boolean {
   const entry = speaker.lang.lexicon[word];
   if (entry === undefined || entry.strength < above) return false;
-  if (entry.meaning === 'self' || entry.meaning.startsWith('kin:')) {
+  if (entry.meaning === 'self' || kinId(entry.meaning) !== null) {
     return false;
   }
   const heard = listener[word];

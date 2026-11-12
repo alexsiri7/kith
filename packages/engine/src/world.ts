@@ -60,6 +60,20 @@ export interface World {
   readonly selectedKith: EntityId | null;
 }
 
+export function addMoment(world: World, kith: EntityId, text: string): World {
+  return {
+    ...world,
+    moments: [...world.moments, { simTime: world.clock.simTime, kith, text }],
+  };
+}
+
+export function addCoins(world: World, coins: number): World {
+  return {
+    ...world,
+    player: { ...world.player, coins: world.player.coins + coins },
+  };
+}
+
 export function createWorld(seed: number): World {
   return {
     schemaVersion: SCHEMA_VERSION,

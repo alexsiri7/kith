@@ -18,7 +18,7 @@ import type { GameEvent } from './event.js';
 import { lexiconOf, listens, teach } from './language.js';
 import type { Registry } from './registry.js';
 import { nextFloat } from './rng.js';
-import type { EntityId, World } from './world.js';
+import { addCoins, addMoment, type EntityId, type World } from './world.js';
 
 export interface Interaction extends EffectContext {
   readonly verb: VerbId;
@@ -249,17 +249,7 @@ function actorEffect(
       events.push({ type: effect.event, actor: id, target: ctx.target });
       return world;
     case 'moment':
-      return {
-        ...world,
-        moments: [
-          ...world.moments,
-          { simTime: now, kith: id, text: effect.text },
-        ],
-        player: {
-          ...world.player,
-          coins: world.player.coins + (effect.coins ?? 0),
-        },
-      };
+      return addCoins(addMoment(world, id, effect.text), effect.coins ?? 0);
     case 'swarm':
       return setField(world, registry, ctx.target, 'swarm', () => ({
         victim: id,
