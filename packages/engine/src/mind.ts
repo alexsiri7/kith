@@ -272,7 +272,8 @@ export type Mind = z.infer<typeof mindState>;
 export type Act = NonNullable<Mind['act']>;
 export type Bias = Mind['biases'][number];
 export type Genome = Mind['genome'];
-export type Trait = keyof Genome;
+export const TRAITS = genome.keyof().options;
+export type Trait = (typeof TRAITS)[number];
 
 export interface MindContent {
   readonly needs: ReadonlySet<NeedId>;

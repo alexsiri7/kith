@@ -4,7 +4,8 @@ import type { GameEvent } from './event.js';
 import { interact } from './interact.js';
 import { hear, languageStep, notice } from './language.js';
 import type { Registry } from './registry.js';
-import type { World } from './world.js';
+import { befriend, grieve, socialStep } from './social.js';
+import type { EntityId, World } from './world.js';
 
 export type Presence =
   | { readonly watching: false }
@@ -30,14 +31,16 @@ export const CATCH_UP_STEP_MS = 60_000;
 
 /**
  * Advances the world by `dtMs` game milliseconds, applying `commands` in
- * order, then lets every entity whose type declares a mind think, and every
- * one whose type declares language remember, forget and chatter. Pure:
- * returns a new world and never mutates its input.
+ * order, then lets every entity whose type declares a mind think, every one
+ * whose type declares language remember, forget and chatter, and every one
+ * whose type declares social life hatch, keep company, warn, lay eggs and
+ * grieve. Pure: returns a new world and never mutates its input.
  *
  * `use` is the player's interaction through the target's affordances and
  * does nothing when refused. `tickle`, `scold`, `say` and `point` reach the
- * selected Kith; `cortexIntent` and `setWants` bias a Kith's choices. Other
- * commands that act on entities have no effect yet.
+ * selected Kith; `cortexIntent` and `setWants` bias a Kith's choices;
+ * `rename` names a Kith or an egg. Other commands that act on entities have
+ * no effect yet.
  */
 export function step(
   world: World,
@@ -67,13 +70,10 @@ export function step(
         events.push(...result.events);
       }
     } else if (command.type === 'tickle' || command.type === 'scold') {
-      if (next.selectedKith !== null) {
-        const result = feedback(
-          next,
-          ctx.registry,
-          next.selectedKith,
-          command.type,
-        );
+      const kith = next.selectedKith;
+      if (kith !== null) {
+        next = befriend(next, ctx.registry, kith, command.type);
+        const result = feedback(next, ctx.registry, kith, command.type);
         next = result.world;
         events.push(...result.events);
       }
@@ -88,12 +88,17 @@ export function step(
       events.push(...result.events);
     } else if (command.type === 'point') {
       next = notice(next, ctx.registry, command.target);
+    } else if (command.type === 'rename') {
+      next = rename(next, ctx.registry, command.kith, command.name);
     }
   }
   for (const id of Object.keys(next.entities)) {
     const result = think(next, ctx.registry, ctx.presence, id, dtMs);
     next = result.world;
     events.push(...result.events);
+    for (const event of result.events) {
+      if (event.type === 'died') next = grieve(next, ctx.registry, event.actor);
+    }
   }
   for (const id of Object.keys(next.entities)) {
     const result = languageStep(
@@ -107,7 +112,31 @@ export function step(
     next = result.world;
     events.push(...result.events);
   }
+  for (const id of Object.keys(next.entities)) {
+    const result = socialStep(next, ctx.registry, ctx.presence, id, dtMs);
+    next = result.world;
+    events.push(...result.events);
+  }
   return { world: next, events };
+}
+
+/** Names an entity whose type has a `name` field; any other is left as it is. */
+function rename(
+  world: World,
+  registry: Registry,
+  id: EntityId,
+  name: string,
+): World {
+  const entity = world.entities[id];
+  const type = entity && registry.types.get(entity.type);
+  if (entity === undefined || type === undefined) return world;
+  if (typeof entity.state !== 'object') return world;
+  const parsed = type.state.safeParse({ ...entity.state, name });
+  if (!parsed.success) return world;
+  return {
+    ...world,
+    entities: { ...world.entities, [id]: { ...entity, state: parsed.data } },
+  };
 }
 
 /** Steps unattended in coarse one-minute steps up to `toSimTime`. */

@@ -26,6 +26,7 @@ import {
   type ValueCategory,
 } from './mind.js';
 import type { Registry } from './registry.js';
+import { socialState } from './relationship.js';
 import { nextFloat } from './rng.js';
 import type { Presence, StepResult } from './step.js';
 import type { Target } from './target.js';
@@ -134,11 +135,11 @@ const anyAbove = (needs: Levels, levels: Levels) =>
 const anyBelow = (needs: Levels, levels: Levels) =>
   Object.entries(levels).some(([need, level]) => (needs[need] ?? 1) < level);
 
-function addLevels(needs: Levels, deltas: Levels): Levels {
+export function addLevels(needs: Levels, deltas: Levels, times = 1): Levels {
   const next = { ...needs };
   for (const [need, delta] of Object.entries(deltas)) {
     const level = next[need];
-    if (level !== undefined) next[need] = clamp(level + delta);
+    if (level !== undefined) next[need] = clamp(level + delta * times);
   }
   return next;
 }
@@ -198,6 +199,18 @@ function biasFor(
     }
   }
   return total;
+}
+
+/** Whether a live bias names `target` itself, such as a wish or an intent. */
+function wishedFor(
+  mind: Mind,
+  now: number,
+  verb: VerbId,
+  target: EntityId,
+): boolean {
+  return mind.biases.some(
+    (bias) => bias.until > now && bias.verb === verb && bias.target === target,
+  );
 }
 
 function zonesOf(world: World, registry: Registry): Zone[] {
@@ -271,9 +284,9 @@ function actor(self: Self): Interaction['actor'] {
 
 /**
  * Scores what the mind perceives or remembers by the need relevance of what
- * it could do there, its opinion of the type, novelty, distance and biases.
- * Types it thinks too little of, and targets beyond a hazard zone it fears,
- * are left out. Best first.
+ * it could do there, its opinion of the type, its affection for the entity
+ * itself, novelty, distance and biases. Types it thinks too little of, and
+ * targets beyond a hazard zone it fears, are left out. Best first.
  */
 export function attend(
   world: World,
@@ -287,6 +300,7 @@ export function attend(
   const me = entityOf(world, id);
   const now = world.clock.simTime;
   const zones = zonesOf(world, registry);
+  const { bonds } = socialState.parse(me.state);
   const attended: Attended[] = [];
   for (const other of Object.values(world.entities)) {
     if (other.id === id || other.carriedBy !== undefined || other.heldByPlayer)
@@ -329,6 +343,7 @@ export function attend(
       score:
         relevance +
         opinion +
+        (bonds[other.id]?.affection ?? 0) +
         novelty -
         Math.abs(x - me.x) * def.attention.distance +
         bias,
@@ -338,7 +353,8 @@ export function attend(
 }
 
 /**
- * Scores the verbs on the best attended targets and the mind's activities:
+ * Scores each verb on the best attended target that offers it, and on any
+ * attended target it is wished for, and the mind's activities:
  * `Σ need_i × value[need_i][verb][category]` + opinion + biases + noise
  * drawn from the `behaviour` stream. Best first.
  */
@@ -360,11 +376,16 @@ export function decide(
   const weighed: Option[] = [];
   const add = (option: Omit<Option, 'score'>, score: number) =>
     weighed.push({ ...option, score });
+  const offered = new Set<VerbId>();
   for (const target of attend(world, registry, id).slice(
     0,
     def.attention.attend,
   )) {
     for (const verb of target.verbs) {
+      if (offered.has(verb) && !wishedFor(mind, now, verb, target.id)) {
+        continue;
+      }
+      offered.add(verb);
       add(
         {
           verb,

@@ -28,6 +28,12 @@ export type Expr =
 
 export type Predicate =
   | { readonly is: string; readonly of?: Subject }
+  /** Whether a string field holds one of `oneOf`. */
+  | {
+      readonly state: string;
+      readonly of?: Subject;
+      readonly oneOf: readonly string[];
+    }
   | { readonly gt: readonly [Expr, Expr] }
   | { readonly lt: readonly [Expr, Expr] }
   | { readonly not: Predicate }
@@ -193,6 +199,12 @@ function predicateRefs(predicate: Predicate): FieldRef[] {
   if ('is' in predicate) {
     return [
       { field: predicate.is, of: predicate.of, kind: 'boolean' },
+      ...subjectRefs(predicate.of),
+    ];
+  }
+  if ('oneOf' in predicate) {
+    return [
+      { field: predicate.state, of: predicate.of, kind: 'string' },
       ...subjectRefs(predicate.of),
     ];
   }

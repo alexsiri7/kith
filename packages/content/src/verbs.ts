@@ -14,4 +14,5 @@ export const VERBS = [
   'spin',
   'shake',
   'nest',
+  'social',
 ] as const satisfies readonly VerbId[];

@@ -124,6 +124,7 @@ function typed<T>(
 const isNumber = (value: unknown): value is number => typeof value === 'number';
 const isBoolean = (value: unknown): value is boolean =>
   typeof value === 'boolean';
+const isString = (value: unknown): value is string => typeof value === 'string';
 
 export function evaluate(world: World, ctx: EffectContext, expr: Expr): number {
   if (typeof expr === 'number') return expr;
@@ -164,6 +165,15 @@ export function test(
       `${id}.${predicate.is}`,
     );
   }
+  if ('oneOf' in predicate) {
+    const id = resolve(world, ctx, predicate.of);
+    const value = typed(
+      field(world, id, predicate.state),
+      isString,
+      `${id}.${predicate.state}`,
+    );
+    return predicate.oneOf.includes(value);
+  }
   if ('gt' in predicate) {
     const [a, b] = predicate.gt;
     return evaluate(world, ctx, a) > evaluate(world, ctx, b);
@@ -203,7 +213,7 @@ function setField(
   return withEntity(world, { ...entity, state: parsed.data });
 }
 
-function freeId(world: World, type: string): EntityId {
+export function freeId(world: World, type: string): EntityId {
   let n = 1;
   while (`${type}-${n}` in world.entities) n++;
   return `${type}-${n}`;

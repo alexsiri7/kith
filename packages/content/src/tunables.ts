@@ -2,6 +2,7 @@ import {
   GARDEN_TIME_SCALE,
   type LanguageDef,
   type MindDef,
+  type SocialDef,
 } from '@kith/engine';
 
 // The prototype's numbers (packages/legacy-sim). It counted durations and
@@ -89,12 +90,18 @@ export const KITH_MIND: MindDef = {
       poke: { hazard: 0.3, plant: 0.3, critter: 0.3 },
       chase: { critter: 0.3 },
       use: { gadget: 0.12 },
+      social: { kith: 0.12 },
     },
-    lonely: { approach: { player: 0.45 }, hug: { toy: 0.25 } },
+    lonely: {
+      approach: { player: 0.45 },
+      hug: { toy: 0.25 },
+      social: { kith: 0.4 },
+    },
     fear: {
       'rest-in': { structure: 0.15 },
       approach: { player: 0.25 },
       hug: { toy: 0.2 },
+      social: { kith: 0.15 },
     },
   },
   learning: {
@@ -211,7 +218,6 @@ export const KITH_LANGUAGE: LanguageDef = {
     ],
     feelAbove: 0.6,
   },
-  // Until relationships (#11) add a social verb, "friend" commands nothing.
   commands: {
     eat: { verb: 'eat', direct: true },
     food: { verb: 'eat' },
@@ -225,6 +231,7 @@ export const KITH_LANGUAGE: LanguageDef = {
     shelter: { verb: 'rest-in' },
     come: { verb: 'approach', direct: true },
     you: { verb: 'approach' },
+    friend: { verb: 'social' },
     stop: { verb: 'idle', direct: true },
   },
   obey: {
@@ -235,5 +242,101 @@ export const KITH_LANGUAGE: LanguageDef = {
     needs: { bored: -0.2 },
     ms: 30_000 * REAL,
     strength: 1.5,
+  },
+};
+
+const tradeable = { range: [0, 1], amount: 0.4 } as const;
+
+/** How a Kith bonds, warns, raises a family and grieves. */
+export const KITH_SOCIAL: SocialDef = {
+  firstBond: {
+    kith: { familiarity: 0, affection: 0.1, trust: 0.2 },
+    robot: { familiarity: 0, affection: 0.05, trust: 0.15 },
+  },
+  player: {
+    // 0.015 a real hour.
+    watched: 0.015 / REAL,
+    tickle: { affection: 0.015, trust: 0.008 },
+    comfort: { affection: 0.05, trust: 0.05 },
+    scold: { trust: -0.03 },
+  },
+  company: {
+    kith: {
+      within: 140,
+      familiarity: 0.05,
+      ease: { need: 'lonely', perHour: 0.25, base: 0.4 },
+      affection: {
+        perHour: 0.015,
+        sociability: 0.4,
+        afraid: { need: 'fear', above: 0.5, factor: 0.3 },
+      },
+    },
+    robot: {
+      within: 140,
+      familiarity: 0.03,
+      ease: { need: 'lonely', perHour: 0.08, base: 0.3 },
+      affection: { perHour: 0.006 },
+    },
+  },
+  warning: {
+    within: 260,
+    below: -0.4,
+    everyMs: 60_000 * REAL,
+    refuse: ['no', 'bad'],
+    heed: { rate: 0.15, base: 0.6, worded: 1.4 },
+    teach: 0.4,
+    abandon: { below: -0.3, trust: 0.6 },
+    coins: 20,
+  },
+  family: {
+    stage: 'adult',
+    within: 70,
+    affection: 0.55,
+    content: {
+      below: { hunger: 0.45, cold: 0.3, fear: 0.2, tired: 0.7, lonely: 0.6 },
+      health: 0.6,
+    },
+    // 1.5 real days.
+    cooldownMs: 1.5 * 24 * HOUR_MS * REAL,
+    fewerThan: 6,
+    meanMs: 3 * HOUR_MS,
+    coins: 30,
+    egg: {
+      hatchMs: 24 * HOUR_MS,
+      hatchInto: 'baby',
+      nest: { meaning: 'shelter', offset: 40 },
+      affection: 0.6,
+    },
+    genome: {
+      mutate: 0.15,
+      traits: {
+        curiosity: tradeable,
+        agreeable: tradeable,
+        sociability: tradeable,
+        hardiness: tradeable,
+        learnRate: { range: [0.6, 1.5], amount: 0.4 },
+      },
+    },
+    inherit: {
+      player: {
+        trust: { base: 0.1, share: 0.6 },
+        affection: { base: 0.05, share: 0.4 },
+      },
+      bonds: { robot: { trust: { base: 0.1, share: 0.5 } } },
+      parent: { affection: 0.6, trust: 0.6 },
+      zones: 0.3,
+      beliefs: {
+        about: ['you', 'river', 'robot'],
+        above: 0.3,
+        feel: 0.7,
+        strength: 0.35,
+      },
+    },
+  },
+  grief: {
+    closeAbove: 0.3,
+    needs: { lonely: 0.3, fear: 0.2 },
+    perAffection: { lonely: 0.5 },
+    belief: { about: 'night', feel: -0.3 },
   },
 };

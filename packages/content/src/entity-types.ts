@@ -2,12 +2,13 @@ import {
   GARDEN_TIME_SCALE,
   languageShape,
   mindShape,
+  socialShape,
   type AffordanceDef,
   type EntityType,
 } from '@kith/engine';
 import { z } from 'zod';
 import { BOARD_WORDS } from './meanings.js';
-import { KITH_LANGUAGE, KITH_MIND } from './tunables.js';
+import { KITH_LANGUAGE, KITH_MIND, KITH_SOCIAL } from './tunables.js';
 
 // Body sizes and salience are placeholders until art (#17) tunes them; the
 // brain does not weigh salience yet.
@@ -200,6 +201,18 @@ const useFoodMachine: AffordanceDef = {
   ],
 };
 
+/** Keeping another Kith company; being near is what does it good. */
+const keepCompany: AffordanceDef = {
+  verb: 'social',
+  actors: ['kith'],
+  approach: 'follow',
+  available: {
+    all: [{ is: 'alive' }, { not: { state: 'stage', oneOf: ['egg'] } }],
+  },
+  duration: [10_000 * REAL, 20_000 * REAL],
+  outcomes: [{ effects: [], valence: 0 }],
+};
+
 export const KITH_STAGES = [
   'egg',
   'baby',
@@ -226,12 +239,10 @@ export const ENTITY_TYPES: readonly EntityType[] = [
     state: z.object({
       ...mindShape,
       ...languageShape,
+      ...socialShape,
       name: z.string().default(''),
       stage: z.enum(KITH_STAGES).default('egg'),
-      hatchAt: z.number().nullable().default(null),
-      born: z.number().nullable().default(null),
       dies: z.number().nullable().default(null),
-      generation: z.int().default(1),
       needs: z
         .object(
           Object.fromEntries(
@@ -249,9 +260,10 @@ export const ENTITY_TYPES: readonly EntityType[] = [
     }),
     body: { w: 24, h: 28 },
     perception: { salience: 1, moving: true },
-    affordances: [],
+    affordances: [keepCompany],
     mind: KITH_MIND,
     language: KITH_LANGUAGE,
+    social: KITH_SOCIAL,
     sprite: 'kith',
   },
   {

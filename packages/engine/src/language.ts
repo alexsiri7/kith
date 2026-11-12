@@ -11,6 +11,7 @@ import {
   type Trait,
 } from './mind.js';
 import type { Registry } from './registry.js';
+import { socialState } from './relationship.js';
 import { nextFloat } from './rng.js';
 import type { Presence, StepResult } from './step.js';
 import type { Target } from './target.js';
@@ -113,7 +114,10 @@ export interface LanguageDef {
   readonly commands: Readonly<
     Record<MeaningId, { readonly verb: VerbId; readonly direct?: true }>
   >;
-  /** Obeys with chance `base + trust × trust + perTrait × genome[trait] + Σ needs`. */
+  /**
+   * Obeys with chance `base + trust × its trust in the player + perTrait ×
+   * genome[trait] + Σ needs`.
+   */
   readonly obey: {
     readonly base: number;
     readonly trust: number;
@@ -141,8 +145,6 @@ export const languageShape = {
   parents: z.array(z.string()).default([]),
   /** Its babbling voice. */
   syllables: z.array(z.string().min(1)).min(1).default(['ba', 'mi', 'nu']),
-  /** How much it trusts the player; relationships (#11) move it. */
-  trust: z.number().min(0).max(1).default(0.2),
   /** Where it looks because the player pointed there. */
   look: z.object({ x: z.number(), until: z.number() }).nullable().default(null),
   nextChatter: z.number().default(0),
@@ -217,7 +219,7 @@ const kinOf = (id: EntityId): MeaningId => `${KIN}${id}`;
 const kinId = (meaning: MeaningId): EntityId | null =>
   meaning.startsWith(KIN) ? meaning.slice(KIN.length) : null;
 
-function nameOf(state: unknown): string {
+export function nameOf(state: unknown): string {
   return typeof state === 'object' &&
     state !== null &&
     'name' in state &&
@@ -486,7 +488,8 @@ export function obey(
   }
   if (verb === null) return { world, events: [] };
   const { obey: o } = def;
-  let p = o.base + o.trust * lang.trust + o.perTrait * mind.genome[o.trait];
+  const { trust } = socialState.parse(world.entities[id]!.state).player;
+  let p = o.base + o.trust * trust + o.perTrait * mind.genome[o.trait];
   for (const [need, weight] of Object.entries(o.needs)) {
     p += weight * (mind.needs[need] ?? 0);
   }

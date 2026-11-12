@@ -2,11 +2,7 @@ import type { EntityId } from './world.js';
 
 /** Every event names the entity it happened to or was done by. */
 export type GameEvent =
-  | {
-      readonly type: 'hatch';
-      readonly actor: EntityId;
-      readonly target: EntityId;
-    }
+  | { readonly type: 'hatch'; readonly actor: EntityId }
   | {
       readonly type: 'ate';
       readonly actor: EntityId;

@@ -19,6 +19,7 @@ import {
 } from './language.js';
 import { mindShape, mindState, type Act, type MindDef } from './mind.js';
 import { createRegistry } from './registry.js';
+import { socialShape } from './relationship.js';
 import { nextFloat } from './rng.js';
 import { step, type Presence } from './step.js';
 import type { Target } from './target.js';
@@ -169,6 +170,7 @@ const kith: EntityType = {
   state: z.object({
     ...mindShape,
     ...languageShape,
+    ...socialShape,
     name: z.string().default(''),
     needs: z
       .object(Object.fromEntries(NEEDS.map((need) => [need, z.number()])))
@@ -561,12 +563,15 @@ describe('commands', () => {
     food: ['food', 0.2],
     come: ['come', 0.5],
   });
+  const trusting = (trust: number) => ({
+    player: { familiarity: 0, affection: 0.1, trust },
+  });
   const willing = {
-    trust: 1,
+    ...trusting(1),
     genome: { ...mindState.parse({}).genome, agreeable: 1 },
   };
   const unwilling = {
-    trust: 0,
+    ...trusting(0),
     genome: { ...mindState.parse({}).genome, agreeable: 0 },
     needs: needs({ bored: 1, tired: 0.3 }),
   };
@@ -607,7 +612,7 @@ describe('commands', () => {
 
   it('obeys a middling Kith when its roll falls below the chance', () => {
     const middling = {
-      trust: 0.5,
+      ...trusting(0.5),
       genome: { ...mindState.parse({}).genome, agreeable: 0.5 },
     };
     const world = garden({ pip: { lexicon: known, ...middling } });
