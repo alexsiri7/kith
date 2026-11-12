@@ -201,6 +201,18 @@ function biasFor(
   return total;
 }
 
+/** Whether a live bias names `target` itself, such as a wish or an intent. */
+function wishedFor(
+  mind: Mind,
+  now: number,
+  verb: VerbId,
+  target: EntityId,
+): boolean {
+  return mind.biases.some(
+    (bias) => bias.until > now && bias.verb === verb && bias.target === target,
+  );
+}
+
 function zonesOf(world: World, registry: Registry): Zone[] {
   const zones: Zone[] = [];
   for (const entity of Object.values(world.entities)) {
@@ -341,8 +353,8 @@ export function attend(
 }
 
 /**
- * Scores each verb on the best attended target that offers it, and the
- * mind's activities:
+ * Scores each verb on the best attended target that offers it, and on any
+ * attended target it is wished for, and the mind's activities:
  * `Σ need_i × value[need_i][verb][category]` + opinion + biases + noise
  * drawn from the `behaviour` stream. Best first.
  */
@@ -370,7 +382,9 @@ export function decide(
     def.attention.attend,
   )) {
     for (const verb of target.verbs) {
-      if (offered.has(verb)) continue;
+      if (offered.has(verb) && !wishedFor(mind, now, verb, target.id)) {
+        continue;
+      }
       offered.add(verb);
       add(
         {

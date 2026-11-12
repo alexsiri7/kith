@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { AffordanceDef } from './affordance.js';
+import { decide, wish } from './brain.js';
 import { createEntity, type EntityInit, type EntityType } from './entity.js';
 import type { GameEvent } from './event.js';
 import { languageShape, type LanguageDef } from './language.js';
@@ -452,6 +453,28 @@ describe('relationships', () => {
       target: { kind: 'entity', id: 'loved' },
     });
   });
+
+  it('still considers a Kith it is wished to keep company with, beside one it loves more', () => {
+    const world = wish(
+      garden({
+        pip: { needs: needs({ lonely: 0.5 }), bonds: { loved: bond(0.9) } },
+        loved: { x: 1010 },
+        stranger: { x: 2000 },
+      }),
+      registry,
+      'pip',
+      [{ verb: 'social', target: 'stranger' }],
+    );
+    const targets = decide(world, registry, 'pip', away)
+      .options.filter((option) => option.verb === 'social')
+      .map((option) => option.target);
+    expect(targets).toEqual(
+      expect.arrayContaining([
+        { kind: 'entity', id: 'loved' },
+        { kind: 'entity', id: 'stranger' },
+      ]),
+    );
+  });
 });
 
 describe('warnings', () => {
@@ -675,6 +698,26 @@ describe('families', () => {
       const { events } = run(world, DAY, () => false);
       expect(events.filter((e) => e.type === 'eggLaid')).toEqual([]);
     }
+  });
+
+  it('lays no egg while six Kith live, and lays once fewer do', () => {
+    const crowd = (others: number) =>
+      garden({
+        bo: { bonds: { pip: bond(0.9) } },
+        pip: { bonds: { bo: bond(0.9) } },
+        ...Object.fromEntries(
+          Array.from({ length: others }, (_, i) => [
+            `kin${i}`,
+            { x: 3000 + i * 100 },
+          ]),
+        ),
+      });
+    const laid = (world: World) =>
+      run(world, DAY, (events) =>
+        events.some((e) => e.type === 'eggLaid'),
+      ).events.some((e) => e.type === 'eggLaid');
+    expect(laid(crowd(4))).toBe(false);
+    expect(laid(crowd(3))).toBe(true);
   });
 
   it('lays its egg by the nearest shelter, crossing the parents', () => {
