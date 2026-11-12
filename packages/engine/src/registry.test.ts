@@ -207,6 +207,46 @@ describe('createRegistry', () => {
     }
   });
 
+  it('reports lifecycle and zone current problems', () => {
+    const create = () =>
+      createRegistry({
+        types: [
+          {
+            ...river,
+            zone: { ...river.zone!, current: { speed: -1, bank: 4 } },
+            lifecycle: [
+              { everyMs: 0, perHour: true, effects: [] },
+              {
+                when: { is: 'flooded' },
+                chance: 2,
+                effects: [{ kind: 'spawn', type: 'fish', offsets: [] }],
+              },
+              {
+                chance: { count: ['frog'] },
+                effects: [{ kind: 'spawn', type: 'river', spread: -1 }],
+              },
+            ],
+          },
+        ],
+        needs: [],
+        meanings: [],
+        verbs: [],
+      });
+    for (const problem of [
+      'type "river" zone current has a negative or invalid speed or bank',
+      'type "river" lifecycle rule 1 applies every invalid 0 ms',
+      'type "river" lifecycle rule 1 is both periodic and per hour',
+      'type "river" lifecycle rule 2 has chance 2 outside [0, 1]',
+      'type "river" lifecycle rule 2 reads unknown state field "flooded"',
+      'type "river" lifecycle rule 2 spawns unknown type "fish"',
+      'type "river" lifecycle rule 2 spawns fish at an empty list of offsets',
+      'type "river" lifecycle rule 3 counts unknown type "frog"',
+      'type "river" lifecycle rule 3 spawns river with a negative spread',
+    ]) {
+      expect(create).toThrow(problem);
+    }
+  });
+
   it('rejects duplicate meanings and verbs', () => {
     expect(() =>
       createRegistry({

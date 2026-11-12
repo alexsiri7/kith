@@ -8,10 +8,18 @@ import type {
   OutcomeDef,
 } from './affordance.js';
 import { createEntity, type EntityType } from './entity.js';
-import { engage, interact, type Interaction } from './interact.js';
+import {
+  affect,
+  engage,
+  evaluate,
+  interact,
+  test,
+  type Interaction,
+} from './interact.js';
 import { createRegistry, type Registry } from './registry.js';
 import { nextFloat } from './rng.js';
 import { step } from './step.js';
+import { weatherAt } from './weather.js';
 import { createWorld, serialiseWorld, type World } from './world.js';
 
 const kith: EntityType = {
@@ -184,6 +192,15 @@ describe('effects', () => {
     expect(thingOf(world)).toMatchObject({ count: 1, until: 3 });
   });
 
+  it('leaves the world as it is when a value does not change', () => {
+    const { world, registry } = setup({});
+    const ctx = { actor: pip, target: 'thing' };
+    const capped = affect(world, registry, ctx, [
+      { kind: 'incState', field: 'count', by: 1, range: [0, 2] },
+    ]);
+    expect(capped.world).toBe(world);
+  });
+
   it('spawn creates an entity of a type at a subject, with state', () => {
     const { world } = useWith([
       { kind: 'spawn', type: 'lamp', state: { lit: true } },
@@ -198,6 +215,38 @@ describe('effects', () => {
     expect(world.entities['lamp-2']).toMatchObject({
       x: 100,
       state: { lit: false },
+    });
+  });
+
+  it('spawn places at a random offset, jittered, with computed state', () => {
+    const { world } = useWith([
+      {
+        kind: 'spawn',
+        type: 'thing',
+        offsets: [-50, 50],
+        spread: 5,
+        computed: { count: { sum: [{ state: 'count' }, 1] } },
+      },
+    ]);
+    expect(world.rng.spawning).not.toEqual(setup({}).world.rng.spawning);
+    const spawned = world.entities['thing-1']!;
+    expect(Math.abs(Math.abs(spawned.x - 120) - 50)).toBeLessThanOrEqual(5);
+    expect(spawned.state).toMatchObject({ count: 3 });
+  });
+
+  it('spawn draws randomness only when it has a choice to make', () => {
+    const { world } = useWith([
+      {
+        kind: 'spawn',
+        type: 'thing',
+        offsets: [30],
+        computed: { until: 'now' },
+      },
+    ]);
+    expect(world.rng).toEqual(setup({}).world.rng);
+    expect(world.entities['thing-1']).toMatchObject({
+      x: 150,
+      state: { until: 1000 },
     });
   });
 
@@ -455,6 +504,19 @@ describe('engage', () => {
     expect(result.events).toEqual([
       { type: 'ate', actor: 'pip', target: 'thing' },
     ]);
+  });
+});
+
+describe('expressions', () => {
+  const ctx = { actor: pip, target: 'thing' };
+
+  it('read the weather now and count entities by type', () => {
+    const { world } = setup({});
+    const now = weatherAt(world.seed, world.clock.simTime);
+    expect(evaluate(world, ctx, { weather: 'temp' })).toBe(now.temp);
+    expect(test(world, ctx, { weather: 'night' })).toBe(now.night);
+    expect(evaluate(world, ctx, { count: ['lamp', 'kith'] })).toBe(2);
+    expect(evaluate(world, ctx, { count: ['tree'] })).toBe(0);
   });
 });
 

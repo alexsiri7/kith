@@ -1,3 +1,4 @@
+export * from './away-summary.js';
 export * from './entity-types.js';
 export * from './meanings.js';
 export * from './migrations.js';

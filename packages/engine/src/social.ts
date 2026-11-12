@@ -10,7 +10,6 @@ import type { GameEvent } from './event.js';
 import { freeId } from './interact.js';
 import { addLevels } from './brain.js';
 import {
-  languageState,
   nameOf,
   speak,
   teach,
@@ -19,7 +18,6 @@ import {
   type LanguageDef,
 } from './language.js';
 import {
-  mindState,
   TRAITS,
   type Genome,
   type Levels,
@@ -245,6 +243,7 @@ interface Member {
 
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
+/** Unchecked, for speed: states are validated when entities are created. */
 function memberOf(
   world: World,
   registry: Registry,
@@ -269,9 +268,9 @@ function memberOf(
     def,
     mindDef,
     languageDef,
-    mind: mindState.parse(entity.state),
-    lang: languageState.parse(entity.state),
-    social: socialState.parse(entity.state),
+    mind: entity.state as Mind,
+    lang: entity.state as Language,
+    social: entity.state as Social,
     name: nameOf(entity.state) || id,
   };
 }
@@ -283,7 +282,7 @@ const hatched = (member: Member) =>
 const about = (member: Member) =>
   hatched(member) && !member.mind.asleep && member.mind.inZone === null;
 
-/** Writes state fields, checking the whole state against the type. */
+/** Unchecked, for speed: states are validated when entities are created. */
 function withState(
   world: World,
   member: Member,
@@ -293,7 +292,7 @@ function withState(
   if (typeof entity.state !== 'object' || entity.state === null) {
     throw new Error(`${entity.type} ${entity.id} has no state fields`);
   }
-  const state = member.type.state.parse({ ...entity.state, ...change });
+  const state = { ...entity.state, ...change };
   return {
     ...world,
     entities: { ...world.entities, [member.id]: { ...entity, state } },
@@ -406,7 +405,7 @@ function company(
     const c = type && me.def.company[type.category];
     if (other.id === me.id || c === undefined) continue;
     if (Math.abs(other.x - me.x) >= c.within) continue;
-    const mind = type?.mind === undefined ? null : mindState.parse(other.state);
+    const mind = type?.mind === undefined ? null : (other.state as Mind);
     if (
       mind !== null &&
       (!mind.alive || mind.stage === 'egg' || mind.inZone !== null)

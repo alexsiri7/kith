@@ -13,6 +13,7 @@ import {
   type VerbId,
 } from './entity.js';
 import { languageProblems } from './language.js';
+import { lifecycleProblems } from './lifecycle.js';
 import { mindProblems } from './mind.js';
 import { socialProblems } from './social.js';
 
@@ -64,7 +65,7 @@ function typeProblems(type: EntityType, known: KnownContent): string[] {
   for (const problem of affordanceProblems(type.affordances, state, known)) {
     problems.push(`type "${type.id}" ${problem}`);
   }
-  const { zone, mind, language, social } = type;
+  const { zone, mind, language, social, lifecycle } = type;
   const field = zone?.passableWhen;
   if (field !== undefined && typeof state[field] !== 'boolean') {
     problems.push(
@@ -80,6 +81,17 @@ function typeProblems(type: EntityType, known: KnownContent): string[] {
     }
     for (const problem of effectListProblems(effects, state, known)) {
       problems.push(`type "${type.id}" zone fall-in ${problem}`);
+    }
+    const { current } = zone;
+    if (current !== undefined && !(current.speed >= 0 && current.bank >= 0)) {
+      problems.push(
+        `type "${type.id}" zone current has a negative or invalid speed or bank`,
+      );
+    }
+  }
+  if (lifecycle !== undefined) {
+    for (const problem of lifecycleProblems(lifecycle, state, known)) {
+      problems.push(`type "${type.id}" ${problem}`);
     }
   }
   if (mind !== undefined) {

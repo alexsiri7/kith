@@ -4,7 +4,6 @@ import { formatIssues } from './entity.js';
 import type { GameEvent } from './event.js';
 import {
   ACTIVITIES,
-  mindState,
   type Levels,
   type Mind,
   type MindContent,
@@ -228,6 +227,11 @@ export function nameOf(state: unknown): string {
     : '';
 }
 
+/**
+ * Unchecked, for speed, like `mindOf`: states are validated when entities
+ * are created, by every effect and on load, so a living, hatched entity's
+ * state already has every mind and language field a parse would produce.
+ */
 function speakerOf(
   world: World,
   registry: Registry,
@@ -236,7 +240,7 @@ function speakerOf(
   const entity = world.entities[id];
   const type = entity && registry.types.get(entity.type);
   if (entity === undefined || type?.language === undefined) return null;
-  const mind = mindState.parse(entity.state);
+  const mind = entity.state as Mind;
   if (!mind.alive || mind.stage === 'egg') return null;
   return {
     id,
@@ -244,7 +248,7 @@ function speakerOf(
     type,
     def: type.language,
     mind,
-    lang: languageState.parse(entity.state),
+    lang: entity.state as Language,
     name: nameOf(entity.state) || id,
   };
 }
@@ -266,7 +270,7 @@ function listenersNear(
     );
 }
 
-/** Writes language and mind fields, checking the whole state against the type. */
+/** Unchecked, for speed: states are validated when entities are created. */
 function withSpeaker(
   world: World,
   speaker: Speaker,
@@ -276,7 +280,7 @@ function withSpeaker(
   if (typeof entity.state !== 'object' || entity.state === null) {
     throw new Error(`${entity.type} ${entity.id} has no state fields`);
   }
-  const state = speaker.type.state.parse({ ...entity.state, ...change });
+  const state = { ...entity.state, ...change };
   return {
     ...world,
     entities: { ...world.entities, [speaker.id]: { ...entity, state } },
@@ -814,8 +818,8 @@ function overhear(
     o.within,
   )) {
     const parent = kith.lang.parents.includes(speaker.id) ? o.parent : 1;
+    const heard = lexiconOf(world, registry, kith.id);
     for (const word of Object.keys(speaker.lang.lexicon)) {
-      const heard = lexiconOf(world, registry, kith.id);
       if (!spreads(speaker, heard, word, chatter.spreadAbove)) continue;
       const { meaning } = speaker.lang.lexicon[word]!;
       const taught = teach(

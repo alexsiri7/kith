@@ -44,6 +44,16 @@ export type GameEvent =
       readonly target: EntityId;
     }
   | {
+      readonly type: 'bridgeRaised';
+      readonly actor: EntityId;
+      readonly target: EntityId;
+    }
+  | {
+      readonly type: 'shelterDamaged';
+      readonly actor: EntityId;
+      readonly target: EntityId;
+    }
+  | {
       readonly type: 'learnedSkill';
       readonly actor: EntityId;
       readonly skill: string;

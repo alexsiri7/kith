@@ -1,12 +1,5 @@
 import type { Wish } from './command.js';
-import type {
-  Category,
-  Entity,
-  EntityType,
-  TypeId,
-  VerbId,
-  ZoneFallIn,
-} from './entity.js';
+import type { Category, Entity, EntityType, TypeId, VerbId } from './entity.js';
 import type { GameEvent } from './event.js';
 import {
   affect,
@@ -16,7 +9,6 @@ import {
   type Interaction,
 } from './interact.js';
 import {
-  mindState,
   type Act,
   type Activity,
   type Bias,
@@ -30,7 +22,8 @@ import { socialState } from './relationship.js';
 import { nextFloat } from './rng.js';
 import type { Presence, StepResult } from './step.js';
 import type { Target } from './target.js';
-import type { EntityId, World } from './world.js';
+import { withEntity, type EntityId, type World } from './world.js';
+import { crossings, sideOf, zonesOf, type Zone } from './zone.js';
 
 const HOUR_MS = 3_600_000;
 
@@ -64,17 +57,6 @@ export interface Option {
   readonly score: number;
 }
 
-/** A hazard zone's footprint, and whether it is passable now. */
-interface Zone {
-  readonly id: EntityId;
-  readonly type: TypeId;
-  readonly x: number;
-  readonly lo: number;
-  readonly hi: number;
-  readonly passable: boolean;
-  readonly fallIn: ZoneFallIn;
-}
-
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -95,11 +77,15 @@ function selfOf(world: World, registry: Registry, id: EntityId): Self | null {
   return { id, type, def: type.mind, registry };
 }
 
+/**
+ * Unchecked, for speed: states are validated when entities are created, by
+ * every effect and on load, and the brain writes only typed mind fields.
+ */
 export function mindOf(world: World, id: EntityId): Mind {
-  return mindState.parse(entityOf(world, id).state);
+  return entityOf(world, id).state as Mind;
 }
 
-/** Writes mind fields, and optionally x, checking the whole state against the type. */
+/** Writes mind fields, and optionally x. */
 function withMind(
   world: World,
   self: Self,
@@ -110,12 +96,9 @@ function withMind(
   if (!isRecord(entity.state)) {
     throw new Error(`${entity.type} ${entity.id} has no state fields`);
   }
-  const state = self.type.state.parse({ ...entity.state, ...change });
+  const state = { ...entity.state, ...change };
   const moved = x === undefined ? entity : { ...entity, x };
-  return {
-    ...world,
-    entities: { ...world.entities, [self.id]: { ...moved, state } },
-  };
+  return withEntity(world, { ...moved, state });
 }
 
 function roll(world: World): [number, World] {
@@ -213,44 +196,6 @@ function wishedFor(
   );
 }
 
-function zonesOf(world: World, registry: Registry): Zone[] {
-  const zones: Zone[] = [];
-  for (const entity of Object.values(world.entities)) {
-    const type = registry.types.get(entity.type);
-    if (type?.zone === undefined) continue;
-    const field = type.zone.passableWhen;
-    const passable =
-      field !== undefined &&
-      isRecord(entity.state) &&
-      entity.state[field] === true;
-    const half = type.body.w / 2;
-    zones.push({
-      id: entity.id,
-      type: type.id,
-      x: entity.x,
-      lo: entity.x - half,
-      hi: entity.x + half,
-      passable,
-      fallIn: type.zone.fallIn,
-    });
-  }
-  return zones;
-}
-
-function sideOf(zone: Zone, x: number): -1 | 0 | 1 {
-  return x < zone.lo ? -1 : x > zone.hi ? 1 : 0;
-}
-
-/** Impassable zones a move from `from` to `to` would enter, nearest first. */
-function crossings(zones: readonly Zone[], from: number, to: number): Zone[] {
-  return zones
-    .filter((zone) => {
-      const side = sideOf(zone, from);
-      return !zone.passable && side !== 0 && sideOf(zone, to) !== side;
-    })
-    .sort((a, b) => Math.abs(a.x - from) - Math.abs(b.x - from));
-}
-
 function fears(mind: Mind, def: MindDef, type: TypeId): boolean {
   const { base, curiosity } = def.zoneFear;
   return (
@@ -306,7 +251,7 @@ export function attend(
     if (other.id === id || other.carriedBy !== undefined || other.heldByPlayer)
       continue;
     const type = registry.types.get(other.type);
-    if (type === undefined) continue;
+    if (type === undefined || type.affordances.length === 0) continue;
     const x = perceives(def, me, other, type) ? other.x : mind.memory[other.id];
     if (x === undefined) continue;
     const opinion = mind.opinions[type.id] ?? 0;
@@ -548,7 +493,8 @@ function choose(world: World, self: Self, presence: Presence): World {
     if (perceives(def, me, other, type)) memory[other.id] = other.x;
     else if (remembered !== undefined) memory[other.id] = remembered;
   }
-  world = withMind(world, self, { memory });
+  // Attention reads memory only for what it does not perceive, where the new
+  // memory holds what the old one did, so memory is written with the act.
   const decided = decide(world, self.registry, self.id, presence);
   world = decided.world;
   const best = decided.options[0]!;
@@ -590,6 +536,7 @@ function choose(world: World, self: Self, presence: Presence): World {
     act = { ...act, until: now + activities.approach.ms };
   }
   return withMind(world, self, {
+    memory,
     act,
     asleep,
     lastScores: decided.options.slice(0, 4).map((option) => ({
