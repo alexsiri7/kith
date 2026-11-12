@@ -46,8 +46,15 @@ export type InteractionEventType = Extract<
  * player, who has no entity. Times are in sim milliseconds.
  *
  * They write the actor's state fields `needs`, `health`, `fleeing`,
- * `lexicon`, `sickUntil` and `biases`, and the target's `swarm`, so a type
- * must declare a field before an effect can touch it.
+ * `sickUntil` and `biases`, and the target's `swarm`, `shown` and
+ * `shownUntil`, so a type must declare a field before an effect can touch it.
+ * `teach` teaches the actor through its language, `strength` scaling its
+ * learning rate; an actor without language learns nothing.
+ *
+ * `lesson` shows the next of its `words` the learner half knows, else one it
+ * does not know yet, for `ms`, and teaches it to the learner if it is awake
+ * within `within` px: the acting Kith, or the selected Kith when the player
+ * acts, at the strength for the actor's kind.
  */
 export type Effect =
   | { readonly kind: 'need'; readonly need: NeedId; readonly delta: number }
@@ -79,6 +86,16 @@ export type Effect =
       readonly word: string;
       readonly meaning: MeaningId;
       readonly strength: number;
+    }
+  | {
+      readonly kind: 'lesson';
+      readonly words: readonly {
+        readonly meaning: MeaningId;
+        readonly word: string;
+      }[];
+      readonly strength: Partial<Record<ActorKind, number>>;
+      readonly within: number;
+      readonly ms: number;
     }
   | { readonly kind: 'emit'; readonly event: InteractionEventType }
   | { readonly kind: 'moment'; readonly text: string; readonly coins?: number }
@@ -218,6 +235,11 @@ function effectRefs(effect: Effect): FieldRef[] {
       return subjectRefs(effect.from);
     case 'swarm':
       return [{ field: 'swarm', of: 'target', kind: 'present' }];
+    case 'lesson':
+      return [
+        { field: 'shown', of: 'target', kind: 'number' },
+        { field: 'shownUntil', of: 'target', kind: 'number' },
+      ];
     default:
       return [];
   }
@@ -271,6 +293,14 @@ function effectProblems(effect: Effect, known: KnownContent): string[] {
     case 'teach':
       if (!known.meanings.has(effect.meaning)) {
         problems.push(`teaches unknown meaning "${effect.meaning}"`);
+      }
+      break;
+    case 'lesson':
+      if (effect.words.length === 0) problems.push('lesson has no words');
+      for (const { meaning } of effect.words) {
+        if (!known.meanings.has(meaning)) {
+          problems.push(`teaches unknown meaning "${meaning}"`);
+        }
       }
       break;
     case 'bias':

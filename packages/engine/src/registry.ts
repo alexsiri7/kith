@@ -12,6 +12,7 @@ import {
   type TypeId,
   type VerbId,
 } from './entity.js';
+import { languageProblems } from './language.js';
 import { mindProblems } from './mind.js';
 
 export interface ContentDefinitions {
@@ -62,7 +63,7 @@ function typeProblems(type: EntityType, known: KnownContent): string[] {
   for (const problem of affordanceProblems(type.affordances, state, known)) {
     problems.push(`type "${type.id}" ${problem}`);
   }
-  const { zone, mind } = type;
+  const { zone, mind, language } = type;
   const field = zone?.passableWhen;
   if (field !== undefined && typeof state[field] !== 'boolean') {
     problems.push(
@@ -82,6 +83,14 @@ function typeProblems(type: EntityType, known: KnownContent): string[] {
   }
   if (mind !== undefined) {
     for (const problem of mindProblems(mind, defaults.data, known)) {
+      problems.push(`type "${type.id}" ${problem}`);
+    }
+  }
+  if (language !== undefined) {
+    if (mind === undefined) {
+      problems.push(`type "${type.id}" language needs a mind`);
+    }
+    for (const problem of languageProblems(language, defaults.data, known)) {
       problems.push(`type "${type.id}" ${problem}`);
     }
   }

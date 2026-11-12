@@ -63,6 +63,18 @@ export type GameEvent =
       readonly word: string;
     }
   | {
+      readonly type: 'forgotWord';
+      readonly actor: EntityId;
+      readonly word: string;
+    }
+  | { readonly type: 'said'; readonly actor: EntityId; readonly text: string }
+  | {
+      readonly type: 'understood';
+      readonly actor: EntityId;
+      readonly verb: string;
+      readonly obeyed: boolean;
+    }
+  | {
       readonly type: 'eggLaid';
       readonly actor: EntityId;
       readonly target: EntityId;

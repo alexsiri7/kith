@@ -15,6 +15,7 @@ import {
   type VerbId,
 } from './entity.js';
 import type { GameEvent } from './event.js';
+import { lexiconOf, listens, teach } from './language.js';
 import type { Registry } from './registry.js';
 import { nextFloat } from './rng.js';
 import type { EntityId, World } from './world.js';
@@ -238,23 +239,12 @@ function actorEffect(
         from: resolve(world, ctx, effect.from),
         until: now + effect.ms,
       }));
-    case 'teach':
-      return set('lexicon', (lexicon) => {
-        const entry = isRecord(lexicon) ? lexicon[effect.word] : undefined;
-        const known =
-          isRecord(entry) &&
-          entry.meaning === effect.meaning &&
-          typeof entry.strength === 'number'
-            ? entry.strength
-            : 0;
-        return {
-          ...(isRecord(lexicon) ? lexicon : {}),
-          [effect.word]: {
-            meaning: effect.meaning,
-            strength: clamp(known + effect.strength),
-          },
-        };
-      });
+    case 'teach': {
+      const { word, meaning, strength } = effect;
+      const taught = teach(world, registry, id, word, meaning, strength);
+      events.push(...taught.events);
+      return taught.world;
+    }
     case 'emit':
       events.push({ type: effect.event, actor: id, target: ctx.target });
       return world;
@@ -360,6 +350,8 @@ function applyEffect(
           : { ...entity, carriedBy: holder },
       );
     }
+    case 'lesson':
+      return lesson(world, registry, ctx, effect, events);
     case 'custom': {
       const fn = registry.customEffects.get(effect.fn);
       if (fn === undefined) {
@@ -370,6 +362,61 @@ function applyEffect(
     default:
       return actorEffect(world, registry, ctx, effect, events);
   }
+}
+
+/** A word this strong is half known, and shown again before a new one. */
+const HALF_KNOWN = 0.5;
+
+/** Shows the board's next word, as the prototype's word board picked it. */
+function lesson(
+  world: World,
+  registry: Registry,
+  ctx: EffectContext,
+  effect: Extract<Effect, { kind: 'lesson' }>,
+  events: GameEvent[],
+): World {
+  const { words } = effect;
+  const learner = actorId(ctx) ?? world.selectedKith;
+  const lexicon = learner === null ? {} : lexiconOf(world, registry, learner);
+  const shown = typed(field(world, ctx.target, 'shown'), isNumber, 'shown');
+  const at = (k: number) => (shown + k) % words.length;
+  const strength = (k: number) => {
+    const { word, meaning } = words[at(k)]!;
+    const entry = lexicon[word];
+    return entry?.meaning === meaning ? entry.strength : 0;
+  };
+  const offsets = [...words.keys()];
+  const half = offsets.find((k) => strength(k) > 0 && strength(k) < HALF_KNOWN);
+  const unknown = offsets.map((k) => k + 1).find((k) => strength(k) === 0);
+  const pick = at(half ?? unknown ?? 1);
+  world = setField(world, registry, ctx.target, 'shown', () => pick);
+  world = setField(
+    world,
+    registry,
+    ctx.target,
+    'shownUntil',
+    () => world.clock.simTime + effect.ms,
+  );
+  const board = entityOf(world, ctx.target);
+  if (
+    learner === null ||
+    !listens(world, registry, learner) ||
+    Math.abs(entityOf(world, learner).x - board.x) > effect.within
+  ) {
+    return world;
+  }
+  const { word, meaning } = words[pick]!;
+  const kind = actorKind(world, registry, ctx);
+  const taught = teach(
+    world,
+    registry,
+    learner,
+    word,
+    meaning,
+    (kind && effect.strength[kind]) ?? 0,
+  );
+  events.push(...taught.events);
+  return taught.world;
 }
 
 function applyEffects(
