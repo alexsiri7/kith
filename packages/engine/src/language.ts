@@ -814,8 +814,8 @@ function overhear(
     o.within,
   )) {
     const parent = kith.lang.parents.includes(speaker.id) ? o.parent : 1;
+    const heard = lexiconOf(world, registry, kith.id);
     for (const word of Object.keys(speaker.lang.lexicon)) {
-      const heard = lexiconOf(world, registry, kith.id);
       if (!spreads(speaker, heard, word, chatter.spreadAbove)) continue;
       const { meaning } = speaker.lang.lexicon[word]!;
       const taught = teach(
