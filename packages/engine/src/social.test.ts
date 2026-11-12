@@ -676,8 +676,15 @@ describe('families', () => {
     );
   });
 
+  /** Whether Bo lays an egg in a step long enough that it surely would if it may. */
+  const lays = (world: World) =>
+    socialStep(world, registry, away, 'bo', social.family.meanMs).events.some(
+      (e) => e.type === 'eggLaid',
+    );
+
   it('lays no egg between Kith who are related, apart, unloved or laid lately', () => {
     const loving = (other: string) => ({ bonds: { [other]: bond(0.9) } });
+    expect(lays(garden({ bo: loving('pip'), pip: loving('bo') }))).toBe(true);
     const cases = [
       garden({
         bo: { ...loving('pip'), parents: ['mum'] },
@@ -694,10 +701,7 @@ describe('families', () => {
         pip: { ...loving('bo'), needs: needs({ hunger: 0.5 }) },
       }),
     ];
-    for (const world of cases) {
-      const { events } = run(world, DAY, () => false);
-      expect(events.filter((e) => e.type === 'eggLaid')).toEqual([]);
-    }
+    for (const world of cases) expect(lays(world)).toBe(false);
   });
 
   it('lays no egg while six Kith live, and lays once fewer do', () => {
@@ -712,12 +716,8 @@ describe('families', () => {
           ]),
         ),
       });
-    const laid = (world: World) =>
-      run(world, DAY, (events) =>
-        events.some((e) => e.type === 'eggLaid'),
-      ).events.some((e) => e.type === 'eggLaid');
-    expect(laid(crowd(4))).toBe(false);
-    expect(laid(crowd(3))).toBe(true);
+    expect(lays(crowd(4))).toBe(false);
+    expect(lays(crowd(3))).toBe(true);
   });
 
   it('lays its egg by the nearest shelter, crossing the parents', () => {

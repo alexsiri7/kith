@@ -454,10 +454,12 @@ function warn(
   const now = world.clock.simTime;
   const { lastWarned } = me.social;
   if (lastWarned !== null && now - lastWarned < warning.everyMs) return world;
-  for (const id of Object.keys(world.entities)) {
-    const them = id === me.id ? null : memberOf(world, registry, id);
+  for (const other of Object.values(world.entities)) {
+    if (other.id === me.id || Math.abs(other.x - me.x) > warning.within) {
+      continue;
+    }
+    const them = memberOf(world, registry, other.id);
     if (them === null || !about(them)) continue;
-    if (Math.abs(them.x - me.x) > warning.within) continue;
     const { act } = them.mind;
     if (act === null || act.done || act.type === null) continue;
     if (act.target?.kind !== 'entity') continue;
@@ -564,6 +566,16 @@ function related(a: Member, b: Member): boolean {
   );
 }
 
+/** How many hatched Kith live outside any zone. */
+function living(world: World, registry: Registry): number {
+  return Object.keys(world.entities)
+    .map((id) => memberOf(world, registry, id))
+    .filter(
+      (member) =>
+        member !== null && hatched(member) && member.mind.inZone === null,
+    ).length;
+}
+
 /** Two bonded, content adults nearby may lay an egg; the lower id lays it. */
 function family(
   world: World,
@@ -581,22 +593,17 @@ function family(
     (member.social.lastEgg === null ||
       now - member.social.lastEgg >= f.cooldownMs);
   if (!ready(me)) return world;
-  const living = Object.keys(world.entities)
-    .map((id) => memberOf(world, registry, id))
-    .filter(
-      (member): member is Member =>
-        member !== null && hatched(member) && member.mind.inZone === null,
-    );
-  if (living.length >= f.fewerThan) return world;
-  for (const them of living) {
-    if (them.id <= me.id || !ready(them) || related(me, them)) continue;
-    if (Math.abs(them.x - me.x) > f.within) continue;
+  for (const other of Object.values(world.entities)) {
+    if (other.id <= me.id || Math.abs(other.x - me.x) > f.within) continue;
+    const them = memberOf(world, registry, other.id);
+    if (them === null || !ready(them) || related(me, them)) continue;
     if (
       bondWith(world, registry, me, them.id).affection < f.affection ||
       bondWith(world, registry, them, me.id).affection < f.affection
     ) {
       continue;
     }
+    if (living(world, registry) >= f.fewerThan) return world;
     let r: number;
     [r, world] = roll(world);
     if (r > dtMs / f.meanMs) continue;
