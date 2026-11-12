@@ -630,8 +630,8 @@ function guess(
 
 /**
  * The player speaks to the selected Kith, perhaps pointing. Plain talk teaches
- * the names it recognises, and a lone word what it most likely means; the word
- * that names what is pointed at is taught to it and to Kith nearby. The other
+ * the names it recognises, and a lone word it does not know what it most likely
+ * means; the word that names what is pointed at is taught to it and to Kith nearby. The other
  * words it knows may be a command. A word taught now is never also a command.
  */
 export function hear(
@@ -669,7 +669,12 @@ export function hear(
     events.push(...result.events);
   };
   const named = words.map((word) => namedIn(world, registry, kith, word));
-  if (words.length === 1 && named[0] === null && pointing === undefined) {
+  if (
+    words.length === 1 &&
+    named[0] === null &&
+    pointing === undefined &&
+    !knows(kith.lang.lexicon, words[0]!, kith.def)
+  ) {
     named[0] = guess(world, registry, kith);
   }
   words.forEach((word, i) => {

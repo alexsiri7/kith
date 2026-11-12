@@ -13,11 +13,13 @@ import {
   speak,
   teach,
   tell,
+  wordFor,
   type LanguageDef,
   type Lexicon,
 } from './language.js';
 import { mindShape, mindState, type Act, type MindDef } from './mind.js';
 import { createRegistry } from './registry.js';
+import { nextFloat } from './rng.js';
 import { step, type Presence } from './step.js';
 import type { Target } from './target.js';
 import { createWorld, type World } from './world.js';
@@ -531,6 +533,20 @@ describe('speech', () => {
     }
   });
 
+  it('names a meaning by its strongest speakable word', () => {
+    const synonyms = words({
+      hungry: ['hungry', 0.4],
+      yum: ['hungry', 0.9],
+      nom: ['hungry', 0.2],
+    });
+    expect(wordFor(synonyms, 'hungry', language)).toBe('yum');
+    const reversed = Object.fromEntries(Object.entries(synonyms).reverse());
+    expect(wordFor(reversed, 'hungry', language)).toBe('yum');
+    expect(wordFor(words({ nom: ['hungry', 0.2] }), 'hungry', language)).toBe(
+      null,
+    );
+  });
+
   it('holds its chatter while it speaks', () => {
     const world = garden({ pip: {} });
     const { world: after } = speak(world, registry, 'pip', 'hi');
@@ -587,6 +603,46 @@ describe('commands', () => {
       { type: 'understood', actor: 'pip', verb: 'eat', obeyed: false },
     ]);
     expect(no.world).toBe(never);
+  });
+
+  it('obeys a middling Kith when its roll falls below the chance', () => {
+    const middling = {
+      trust: 0.5,
+      genome: { ...mindState.parse({}).genome, agreeable: 0.5 },
+    };
+    const world = garden({ pip: { lexicon: known, ...middling } });
+    const seen = new Set<boolean>();
+    for (let seed = 0; seed < 20; seed++) {
+      const seeded = { ...world, rng: createWorld(seed).rng };
+      const { events } = obey(seeded, registry, 'pip', ['eat']);
+      const roll = nextFloat(seeded.rng.behaviour).value;
+      expect(events).toEqual([
+        { type: 'understood', actor: 'pip', verb: 'eat', obeyed: roll < 0.625 },
+      ]);
+      seen.add(roll < 0.625);
+    }
+    expect(seen).toEqual(new Set([true, false]));
+  });
+
+  it('obeys a lone word it knows even while busy or feeling strongly', () => {
+    const lexicon = words({ come: ['come', 0.5], yum: ['hungry', 0.5] });
+    for (const busy of [
+      { act: { ...act, verb: 'play', target: ball } },
+      { needs: needs({ hunger: 0.9 }) },
+    ]) {
+      const world = garden(
+        { pip: { lexicon, ...willing, ...busy } },
+        { id: 'ball', type: 'ball', x: 1050 },
+      );
+      const come = hear(world, registry, 'come');
+      expect(come.events).toEqual([
+        { type: 'understood', actor: 'pip', verb: 'approach', obeyed: true },
+      ]);
+      expect(lexiconOf(come.world, registry, 'pip')).toEqual(lexicon);
+      const yum = hear(world, registry, 'yum');
+      expect(yum.events).toEqual([]);
+      expect(lexiconOf(yum.world, registry, 'pip')).toEqual(lexicon);
+    }
   });
 
   it('never takes a word it was just taught as a command', () => {
