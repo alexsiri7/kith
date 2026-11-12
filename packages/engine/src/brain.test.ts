@@ -282,6 +282,7 @@ describe('needs', () => {
       hardiness: 1,
       sociability: 0.5,
       learnRate: 1,
+      agreeable: 0.5,
     };
     const world = garden({
       stage: 'baby',
@@ -476,6 +477,7 @@ describe('learning', () => {
           curiosity: 0.5,
           hardiness: 0.5,
           sociability: 0.5,
+          agreeable: 0.5,
           learnRate: 0.5,
         },
       },

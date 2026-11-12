@@ -45,3 +45,22 @@ export const MEANINGS = [
   'bad',
   'love',
 ] as const satisfies readonly MeaningId[];
+
+/** What the word board shows, in order; its pictures are the client's. */
+export const BOARD_WORDS = [
+  { meaning: 'ball', word: 'ball' },
+  { meaning: 'food', word: 'food' },
+  { meaning: 'shelter', word: 'home' },
+  { meaning: 'eat', word: 'eat' },
+  { meaning: 'play', word: 'play' },
+  { meaning: 'sleep', word: 'sleep' },
+  { meaning: 'come', word: 'come' },
+  { meaning: 'hungry', word: 'hungry' },
+  { meaning: 'cold', word: 'cold' },
+  { meaning: 'tired', word: 'tired' },
+  { meaning: 'happy', word: 'happy' },
+  { meaning: 'water', word: 'water' },
+  { meaning: 'scared', word: 'scared' },
+  { meaning: 'good', word: 'good' },
+  { meaning: 'music', word: 'music' },
+] as const satisfies readonly { meaning: MeaningId; word: string }[];

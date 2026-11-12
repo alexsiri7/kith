@@ -32,12 +32,6 @@ const kith: EntityType = {
         z.object({ verb: z.string(), until: z.number(), strength: z.number() }),
       )
       .default([]),
-    lexicon: z
-      .record(
-        z.string(),
-        z.object({ meaning: z.string(), strength: z.number() }),
-      )
-      .default({}),
   }),
   body: { w: 24, h: 28 },
   perception: { salience: 1, moving: true },
@@ -227,21 +221,6 @@ describe('effects', () => {
       from: 'thing',
       until: 9000,
     });
-  });
-
-  it('teach strengthens a word, or replaces its meaning', () => {
-    const teach = (meaning: string): Effect => ({
-      kind: 'teach',
-      word: 'glow',
-      meaning,
-      strength: 0.25,
-    });
-    expect(
-      stateOf(useWith([teach('light'), teach('light')]).world, 'pip').lexicon,
-    ).toEqual({ glow: { meaning: 'light', strength: 0.5 } });
-    expect(
-      stateOf(useWith([teach('light'), teach('dark')]).world, 'pip').lexicon,
-    ).toEqual({ glow: { meaning: 'dark', strength: 0.25 } });
   });
 
   it('emit names the actor and the target', () => {

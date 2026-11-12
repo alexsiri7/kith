@@ -5,6 +5,7 @@ export type * from './command.js';
 export * from './entity.js';
 export type * from './event.js';
 export * from './interact.js';
+export * from './language.js';
 export * from './mind.js';
 export * from './registry.js';
 export * from './rng.js';

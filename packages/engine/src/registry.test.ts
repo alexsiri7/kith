@@ -117,6 +117,13 @@ describe('createRegistry', () => {
                 { kind: 'sick', ms: -5 },
                 { kind: 'swarm', ms: 1000 },
                 { kind: 'need', need: 'thirst', delta: 0.1 },
+                {
+                  kind: 'lesson',
+                  words: [{ meaning: 'hum', word: 'hum' }],
+                  strength: {},
+                  within: 100,
+                  ms: 1000,
+                },
               ],
             },
           ],
@@ -127,7 +134,10 @@ describe('createRegistry', () => {
           outcomes: [
             {
               valence: 0,
-              effects: [{ kind: 'bias', verb: 'fly', ms: 1, strength: 1 }],
+              effects: [
+                { kind: 'bias', verb: 'fly', ms: 1, strength: 1 },
+                { kind: 'lesson', words: [], strength: {}, within: 1, ms: -1 },
+              ],
               otherwise: { valence: 0, effects: [] },
             },
           ],
@@ -158,6 +168,10 @@ describe('createRegistry', () => {
       'type "hive" poke reads unknown state field "swarm"',
       'type "hive" poke changes unknown need "thirst"',
       'type "hive" use biases unknown verb "fly"',
+      'type "hive" poke teaches unknown meaning "hum"',
+      'type "hive" poke reads unknown state field "shown"',
+      'type "hive" use lesson has no words',
+      'type "hive" use lesson lasts a negative or invalid -1 ms',
     ]) {
       expect(create).toThrow(problem);
     }

@@ -1,11 +1,13 @@
 import {
   GARDEN_TIME_SCALE,
+  languageShape,
   mindShape,
   type AffordanceDef,
   type EntityType,
 } from '@kith/engine';
 import { z } from 'zod';
-import { KITH_MIND } from './tunables.js';
+import { BOARD_WORDS } from './meanings.js';
+import { KITH_LANGUAGE, KITH_MIND } from './tunables.js';
 
 // Body sizes and salience are placeholders until art (#17) tunes them; the
 // brain does not weigh salience yet.
@@ -162,6 +164,26 @@ const pullLever: AffordanceDef = {
   ],
 };
 
+const useWordBoard: AffordanceDef = {
+  verb: 'use',
+  actors: ['player', 'kith'],
+  approach: 'touch',
+  outcomes: [
+    {
+      effects: [
+        {
+          kind: 'lesson',
+          words: BOARD_WORDS,
+          strength: { player: 0.6, kith: 0.9 },
+          within: 320,
+          ms: 12_000 * REAL,
+        },
+      ],
+      valence: 0.1,
+    },
+  ],
+};
+
 const useFoodMachine: AffordanceDef = {
   verb: 'use',
   actors: ['player', 'robot', 'kith'],
@@ -203,12 +225,12 @@ export const ENTITY_TYPES: readonly EntityType[] = [
     meaning: 'friend',
     state: z.object({
       ...mindShape,
+      ...languageShape,
       name: z.string().default(''),
       stage: z.enum(KITH_STAGES).default('egg'),
       hatchAt: z.number().nullable().default(null),
       born: z.number().nullable().default(null),
       dies: z.number().nullable().default(null),
-      parents: z.array(z.string()).default([]),
       generation: z.int().default(1),
       needs: z
         .object(
@@ -224,17 +246,12 @@ export const ENTITY_TYPES: readonly EntityType[] = [
           lonely: 0.3,
           fear: 0,
         }),
-      lexicon: z
-        .record(
-          z.string(),
-          z.object({ meaning: z.string(), strength: z.number() }),
-        )
-        .default({}),
     }),
     body: { w: 24, h: 28 },
     perception: { salience: 1, moving: true },
     affordances: [],
     mind: KITH_MIND,
+    language: KITH_LANGUAGE,
     sprite: 'kith',
   },
   {
@@ -322,6 +339,19 @@ export const ENTITY_TYPES: readonly EntityType[] = [
     perception: { salience: 0.4 },
     affordances: [pullLever],
     sprite: 'lever',
+  },
+  {
+    id: 'word-board',
+    category: 'gadget',
+    state: z.object({
+      /** The index into its words of the word it shows. */
+      shown: z.int().min(0).default(0),
+      shownUntil: z.number().default(0),
+    }),
+    body: { w: 30, h: 44, draggable: true },
+    perception: { salience: 0.5 },
+    affordances: [useWordBoard],
+    sprite: 'word-board',
   },
   {
     id: 'food-machine',

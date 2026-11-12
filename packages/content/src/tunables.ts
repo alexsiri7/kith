@@ -1,4 +1,8 @@
-import { GARDEN_TIME_SCALE, type MindDef } from '@kith/engine';
+import {
+  GARDEN_TIME_SCALE,
+  type LanguageDef,
+  type MindDef,
+} from '@kith/engine';
 
 // The prototype's numbers (packages/legacy-sim). It counted durations and
 // speeds in real time at GARDEN_TIME_SCALE; here they are game time.
@@ -122,5 +126,114 @@ export const KITH_MIND: MindDef = {
     wish: { ms: 24 * HOUR_MS, strength: 0.45 },
     // As strong and as long as an obeyed command.
     cortex: { ms: 30_000 * REAL, strength: 1.5 },
+  },
+};
+
+/** How a Kith learns words, talks, and takes words as commands. */
+export const KITH_LANGUAGE: LanguageDef = {
+  teaching: { rate: 0.25, speakable: 0.3, speakableCoins: 10 },
+  // The prototype's lexicon rates were per real hour.
+  memory: {
+    decayPerHour: 0.03 / REAL,
+    keepAbove: 0.8,
+    consolidatePerHour: 0.1 / REAL,
+    consolidateAbove: 0.5,
+  },
+  speech: {
+    maxWords: { baby: 1, child: 3, adult: 6, elder: 5 },
+    defaultMaxWords: 1,
+    properNouns: ['you', 'self', 'robot'],
+    babble: { words: [1, 3], repeat: 0.4, exclaim: 0.5 },
+    sayMs: 4_500 * REAL,
+  },
+  chatter: {
+    every: [10_000 * REAL, 26_000 * REAL],
+    feelAbove: 0.55,
+    feelings: {
+      hunger: 'hungry',
+      cold: 'cold',
+      tired: 'tired',
+      bored: 'bored',
+      lonely: 'lonely',
+      fear: 'scared',
+    },
+    callPlayer: ['lonely', 'fear', 'hunger', 'cold'],
+    mention: 0.7,
+    nearby: 160,
+    quiet: 0.5,
+    hearWithin: 180,
+    spreadAbove: 0.5,
+    strength: 0.3,
+    parentStrength: 0.45,
+  },
+  overhear: { within: 140, perHour: 0.04, parent: 1.5 },
+  attention: {
+    noticeWithin: 250,
+    lookMs: 4_000 * REAL,
+    attendMs: 8_000 * REAL,
+    attendWithin: 320,
+  },
+  hearing: {
+    maxWords: 12,
+    wakeBelow: { tired: 0.45, fear: 0.5 },
+    plain: 1,
+    pointed: 1,
+    attending: 1.6,
+    bystanders: 0.5,
+    bystanderWithin: 220,
+    ignore: [
+      'the',
+      'a',
+      'an',
+      'this',
+      'that',
+      'is',
+      'it',
+      "it's",
+      'its',
+      'look',
+      'see',
+      'here',
+      'there',
+      'my',
+      'your',
+      'at',
+      'to',
+      'and',
+      'yes',
+      'no',
+      'oh',
+      'hey',
+      'hi',
+      'wow',
+      'good',
+      'nice',
+    ],
+    feelAbove: 0.6,
+  },
+  // Until relationships (#11) add a social verb, "friend" commands nothing.
+  commands: {
+    eat: { verb: 'eat', direct: true },
+    food: { verb: 'eat' },
+    play: { verb: 'play', direct: true },
+    ball: { verb: 'play' },
+    toy: { verb: 'play' },
+    doll: { verb: 'hug' },
+    machine: { verb: 'use' },
+    music: { verb: 'use' },
+    sleep: { verb: 'rest-in', direct: true },
+    shelter: { verb: 'rest-in' },
+    come: { verb: 'approach', direct: true },
+    you: { verb: 'approach' },
+    stop: { verb: 'idle', direct: true },
+  },
+  obey: {
+    base: 0.25,
+    trust: 0.45,
+    trait: 'agreeable',
+    perTrait: 0.3,
+    needs: { bored: -0.2 },
+    ms: 30_000 * REAL,
+    strength: 1.5,
   },
 };

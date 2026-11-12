@@ -167,6 +167,7 @@ const genome = z.object({
   hardiness: z.number().min(0).max(1),
   sociability: z.number().min(0).max(1),
   learnRate: z.number().min(0),
+  agreeable: z.number().min(0).max(1).default(0.5),
 });
 
 const targetSchema = z.discriminatedUnion('kind', [
@@ -214,6 +215,7 @@ export const mindShape = {
     hardiness: 0.5,
     sociability: 0.5,
     learnRate: 1,
+    agreeable: 0.5,
   }),
   asleep: z.boolean().default(false),
   sickUntil: z.number().default(0),

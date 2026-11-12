@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { AffordanceDef, EffectList, OutcomeResult } from './affordance.js';
+import type { LanguageDef } from './language.js';
 import type { MindDef } from './mind.js';
 import type { Registry } from './registry.js';
 import type { EntityId } from './world.js';
@@ -74,6 +75,8 @@ export interface EntityType<S = unknown> {
   readonly zone?: ZoneDef;
   /** Makes each entity of the type think for itself every step. */
   readonly mind?: MindDef;
+  /** Lets each entity of the type learn words, speak and be spoken to. */
+  readonly language?: LanguageDef;
   readonly sprite: SpriteRef;
 }
 
