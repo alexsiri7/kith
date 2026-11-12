@@ -8,8 +8,10 @@ import {
 } from './entity.js';
 import type { GameEvent } from './event.js';
 import { freeId } from './interact.js';
+import { addLevels } from './brain.js';
 import {
   languageState,
+  nameOf,
   speak,
   teach,
   wordFor,
@@ -243,15 +245,6 @@ interface Member {
 
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
-function nameOf(state: unknown): string {
-  return typeof state === 'object' &&
-    state !== null &&
-    'name' in state &&
-    typeof state.name === 'string'
-    ? state.name
-    : '';
-}
-
 function memberOf(
   world: World,
   registry: Registry,
@@ -348,15 +341,6 @@ function changed(bond: Bond, deltas: Partial<Bond>): Bond {
     affection: clamp(bond.affection + (deltas.affection ?? 0)),
     trust: clamp(bond.trust + (deltas.trust ?? 0)),
   };
-}
-
-function addLevels(needs: Levels, deltas: Levels, times = 1): Levels {
-  const next = { ...needs };
-  for (const [need, delta] of Object.entries(deltas)) {
-    const level = next[need];
-    if (level !== undefined) next[need] = clamp(level + delta * times);
-  }
-  return next;
 }
 
 const BELIEFS_KEPT = 8;

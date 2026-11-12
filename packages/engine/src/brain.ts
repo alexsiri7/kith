@@ -135,11 +135,11 @@ const anyAbove = (needs: Levels, levels: Levels) =>
 const anyBelow = (needs: Levels, levels: Levels) =>
   Object.entries(levels).some(([need, level]) => (needs[need] ?? 1) < level);
 
-function addLevels(needs: Levels, deltas: Levels): Levels {
+export function addLevels(needs: Levels, deltas: Levels, times = 1): Levels {
   const next = { ...needs };
   for (const [need, delta] of Object.entries(deltas)) {
     const level = next[need];
-    if (level !== undefined) next[need] = clamp(level + delta);
+    if (level !== undefined) next[need] = clamp(level + delta * times);
   }
   return next;
 }

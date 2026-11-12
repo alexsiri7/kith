@@ -219,7 +219,7 @@ const kinOf = (id: EntityId): MeaningId => `${KIN}${id}`;
 const kinId = (meaning: MeaningId): EntityId | null =>
   meaning.startsWith(KIN) ? meaning.slice(KIN.length) : null;
 
-function nameOf(state: unknown): string {
+export function nameOf(state: unknown): string {
   return typeof state === 'object' &&
     state !== null &&
     'name' in state &&
