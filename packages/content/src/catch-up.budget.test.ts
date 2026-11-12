@@ -70,7 +70,7 @@ it(
     const alive = Object.values(world.entities).filter(
       (e) => e.type === 'kith' && (e.state as { alive: boolean }).alive,
     );
-    expect(alive).toHaveLength(4);
+    expect(alive).toHaveLength(6);
     const saved = serialiseWorld(world);
     expect(serialiseWorld(deserialiseWorld(saved, registry))).toBe(saved);
   },

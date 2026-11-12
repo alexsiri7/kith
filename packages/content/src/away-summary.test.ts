@@ -54,7 +54,7 @@ describe('awaySummary', () => {
       kith('bo', 'Bo'),
     );
     const events: GameEvent[] = [
-      { type: 'hatch', actor: 'pip', target: 'pip' },
+      { type: 'hatch', actor: 'pip' },
       { type: 'ate', actor: 'pip', target: 'cake-1' },
       { type: 'ate', actor: 'pip', target: 'cake-2' },
       { type: 'gotHoney', actor: 'pip', target: 'beehive' },
@@ -122,7 +122,7 @@ describe('awaySummary', () => {
         "lines": [
           "A storm passed through.",
           "A storm raised the bridge.",
-          "Pip got honey, was stung by bees 2 times and was pricked by the cactus.",
+          "Pip got honey, was stung by bees and was pricked by the cactus.",
         ],
       }
     `);

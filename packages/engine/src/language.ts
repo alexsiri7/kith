@@ -270,7 +270,7 @@ function listenersNear(
     );
 }
 
-/** Writes language and mind fields, checking the whole state against the type. */
+/** Unchecked, for speed: states are validated when entities are created. */
 function withSpeaker(
   world: World,
   speaker: Speaker,
@@ -280,7 +280,7 @@ function withSpeaker(
   if (typeof entity.state !== 'object' || entity.state === null) {
     throw new Error(`${entity.type} ${entity.id} has no state fields`);
   }
-  const state = speaker.type.state.parse({ ...entity.state, ...change });
+  const state = { ...entity.state, ...change };
   return {
     ...world,
     entities: { ...world.entities, [speaker.id]: { ...entity, state } },
