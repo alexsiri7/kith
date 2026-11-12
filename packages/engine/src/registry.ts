@@ -14,6 +14,7 @@ import {
 } from './entity.js';
 import { languageProblems } from './language.js';
 import { mindProblems } from './mind.js';
+import { socialProblems } from './social.js';
 
 export interface ContentDefinitions {
   readonly types: readonly EntityType[];
@@ -63,7 +64,7 @@ function typeProblems(type: EntityType, known: KnownContent): string[] {
   for (const problem of affordanceProblems(type.affordances, state, known)) {
     problems.push(`type "${type.id}" ${problem}`);
   }
-  const { zone, mind, language } = type;
+  const { zone, mind, language, social } = type;
   const field = zone?.passableWhen;
   if (field !== undefined && typeof state[field] !== 'boolean') {
     problems.push(
@@ -91,6 +92,14 @@ function typeProblems(type: EntityType, known: KnownContent): string[] {
       problems.push(`type "${type.id}" language needs a mind`);
     }
     for (const problem of languageProblems(language, defaults.data, known)) {
+      problems.push(`type "${type.id}" ${problem}`);
+    }
+  }
+  if (social !== undefined) {
+    if (mind === undefined || language === undefined) {
+      problems.push(`type "${type.id}" social needs a mind and language`);
+    }
+    for (const problem of socialProblems(social, type, defaults.data, known)) {
       problems.push(`type "${type.id}" ${problem}`);
     }
   }

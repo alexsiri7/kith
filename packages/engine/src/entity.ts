@@ -3,6 +3,7 @@ import type { AffordanceDef, EffectList, OutcomeResult } from './affordance.js';
 import type { LanguageDef } from './language.js';
 import type { MindDef } from './mind.js';
 import type { Registry } from './registry.js';
+import type { SocialDef } from './social.js';
 import type { EntityId } from './world.js';
 
 export type TypeId = string;
@@ -77,6 +78,8 @@ export interface EntityType<S = unknown> {
   readonly mind?: MindDef;
   /** Lets each entity of the type learn words, speak and be spoken to. */
   readonly language?: LanguageDef;
+  /** Lets each entity of the type bond, warn, raise a family and grieve. */
+  readonly social?: SocialDef;
   readonly sprite: SpriteRef;
 }
 

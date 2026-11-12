@@ -26,6 +26,7 @@ import {
   type ValueCategory,
 } from './mind.js';
 import type { Registry } from './registry.js';
+import { socialState } from './relationship.js';
 import { nextFloat } from './rng.js';
 import type { Presence, StepResult } from './step.js';
 import type { Target } from './target.js';
@@ -271,9 +272,9 @@ function actor(self: Self): Interaction['actor'] {
 
 /**
  * Scores what the mind perceives or remembers by the need relevance of what
- * it could do there, its opinion of the type, novelty, distance and biases.
- * Types it thinks too little of, and targets beyond a hazard zone it fears,
- * are left out. Best first.
+ * it could do there, its opinion of the type, its affection for the entity
+ * itself, novelty, distance and biases. Types it thinks too little of, and
+ * targets beyond a hazard zone it fears, are left out. Best first.
  */
 export function attend(
   world: World,
@@ -287,6 +288,7 @@ export function attend(
   const me = entityOf(world, id);
   const now = world.clock.simTime;
   const zones = zonesOf(world, registry);
+  const { bonds } = socialState.parse(me.state);
   const attended: Attended[] = [];
   for (const other of Object.values(world.entities)) {
     if (other.id === id || other.carriedBy !== undefined || other.heldByPlayer)
@@ -329,6 +331,7 @@ export function attend(
       score:
         relevance +
         opinion +
+        (bonds[other.id]?.affection ?? 0) +
         novelty -
         Math.abs(x - me.x) * def.attention.distance +
         bias,
@@ -338,7 +341,8 @@ export function attend(
 }
 
 /**
- * Scores the verbs on the best attended targets and the mind's activities:
+ * Scores each verb on the best attended target that offers it, and the
+ * mind's activities:
  * `Σ need_i × value[need_i][verb][category]` + opinion + biases + noise
  * drawn from the `behaviour` stream. Best first.
  */
@@ -360,11 +364,14 @@ export function decide(
   const weighed: Option[] = [];
   const add = (option: Omit<Option, 'score'>, score: number) =>
     weighed.push({ ...option, score });
+  const offered = new Set<VerbId>();
   for (const target of attend(world, registry, id).slice(
     0,
     def.attention.attend,
   )) {
     for (const verb of target.verbs) {
+      if (offered.has(verb)) continue;
+      offered.add(verb);
       add(
         {
           verb,
